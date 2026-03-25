@@ -1,0 +1,38 @@
+# Entornos virtuales (tu proyecto usa la carpeta `animal` como venv)
+animal/
+.venv/
+venv/
+env/
+
+# Secretos y entorno local
+.env
+.env.local
+.env.*.local
+
+# Base de datos local (se regenera al ejecutar la app)
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# IDE / sistema
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

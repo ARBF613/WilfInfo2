@@ -1,0 +1,1647 @@
+<!doctype html>
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WildInfo</title>
+    <meta
+      name="description"
+      content="Tu enciclopedia viva: busca por nombre o hábitat y guarda cada especie en tu bitácora. WildInfo — enciclopedia de fauna."
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            animation: {
+              "pulse-red": "pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
+            keyframes: {
+              "pulse-red": {
+                "0%, 100%": { opacity: "1" },
+                "50%": { opacity: "0.85" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <script>
+      // Aplicar preferencia de modo antes de que el contenido se vuelva a pintar.
+      (function () {
+        const applyTheme = function () {
+          try {
+            const theme = localStorage.getItem("theme");
+            if (theme === "dark") document.documentElement.classList.add("dark");
+            else document.documentElement.classList.remove("dark");
+          } catch (e) {}
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", applyTheme, { once: true });
+        } else {
+          applyTheme();
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-emerald-50 text-slate-800 dark:bg-slate-950 dark:text-white transition-colors duration-500">
+    <div class="mx-auto max-w-3xl px-4 py-10">
+      <header class="mb-8 relative">
+        <button
+          id="themeToggle"
+          type="button"
+          aria-label="Cambiar modo noche"
+          title="Modo noche"
+          class="absolute top-0 right-0 inline-flex items-center justify-center rounded-xl bg-white/70 px-3 py-2 text-slate-800 shadow-sm ring-1 ring-slate-900/5 transition-colors duration-500 hover:bg-white dark:bg-slate-900/70 dark:text-emerald-50 dark:ring-emerald-500/20"
+        >
+          <span id="iconSun" class="hidden">☀️</span>
+          <span id="iconMoon">🌙</span>
+        </button>
+
+        <h1 class="text-4xl font-extrabold tracking-tight text-emerald-900 dark:text-emerald-200">
+          🌿 WildInfo: Enciclopedia de Fauna
+        </h1>
+        <p class="mt-2 max-w-2xl text-base leading-relaxed text-emerald-900/85 dark:text-emerald-100/75">
+          <span class="font-semibold text-emerald-900 dark:text-emerald-200">Tu enciclopedia viva:</span>
+          busca por nombre o hábitat y convierte cada especie en una ficha guardada en tu bitácora.
+        </p>
+      </header>
+
+      <!-- Toast accesible -->
+      <div
+        id="toast"
+        class="pointer-events-none fixed left-1/2 top-5 z-50 hidden -translate-x-1/2 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg dark:bg-slate-900/90"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <!-- Hero / Bienvenida -->
+      <section
+        class="mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-800 to-teal-900 p-8 text-white shadow-xl ring-1 ring-white/10 transition-colors duration-500 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 dark:ring-emerald-500/20"
+        aria-labelledby="heroTitle"
+      >
+        <h2 id="heroTitle" class="text-3xl font-extrabold tracking-tight sm:text-4xl">
+          🌿 WildInfo: Tu Portal a la Biodiversidad
+        </h2>
+        <p class="mt-4 max-w-2xl text-base font-light leading-relaxed text-white/95 dark:text-emerald-50/90">
+          <span class="font-semibold text-white dark:text-emerald-50">Tu enciclopedia viva:</span>
+          busca por nombre o hábitat y convierte cada especie en una ficha guardada en tu bitácora. Además, explora el
+          reino animal, registra avistamientos y aprende sobre la conservación de nuestra fauna.
+        </p>
+
+        <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-4">
+          <div class="rounded-2xl bg-white/10 p-4 backdrop-blur-sm ring-1 ring-white/15 dark:bg-black/20 dark:ring-emerald-500/15">
+            <div class="text-2xl" aria-hidden="true">🔍</div>
+            <h3 class="mt-2 text-sm font-bold">Descubre</h3>
+            <p class="mt-1 text-xs font-light leading-snug text-white/85 dark:text-emerald-100/80">
+              Consulta datos taxonómicos reales de miles de especies.
+            </p>
+          </div>
+          <div class="rounded-2xl bg-white/10 p-4 backdrop-blur-sm ring-1 ring-white/15 dark:bg-black/20 dark:ring-emerald-500/15">
+            <div class="text-2xl" aria-hidden="true">📸</div>
+            <h3 class="mt-2 text-sm font-bold">Registra</h3>
+            <p class="mt-1 text-xs font-light leading-snug text-white/85 dark:text-emerald-100/80">
+              Crea tu propia bitácora de avistamientos con fotos en alta resolución.
+            </p>
+          </div>
+          <div class="rounded-2xl bg-white/10 p-4 backdrop-blur-sm ring-1 ring-white/15 dark:bg-black/20 dark:ring-emerald-500/15">
+            <div class="text-2xl" aria-hidden="true">⚠️</div>
+            <h3 class="mt-2 text-sm font-bold">Concientiza</h3>
+            <p class="mt-1 text-xs font-light leading-snug text-white/85 dark:text-emerald-100/80">
+              Identifica especies en peligro y aprende cómo ayudarlas.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <a
+            id="btnHeroExplore"
+            href="#searchSection"
+            class="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-emerald-900 shadow-md transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-white/80 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400 dark:focus:ring-emerald-300"
+            aria-label="Comenzar exploración: ir al buscador"
+          >
+            Comenzar Exploración
+          </a>
+        </div>
+      </section>
+
+      <!-- Buscador -->
+      <section
+        id="searchSection"
+        class="scroll-mt-24 rounded-3xl bg-white/80 p-5 shadow-sm backdrop-blur transition-colors duration-500 dark:bg-slate-900/70 dark:border dark:border-emerald-500/20"
+      >
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div class="flex-1">
+            <label for="searchName" class="block text-sm font-medium text-slate-800 dark:text-emerald-50/90">
+              Nombre común o hábitat
+            </label>
+            <input
+              id="searchName"
+              type="text"
+              name="q"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="searchNameHint"
+              placeholder="Ej. lion, zebra, cheetah, plains…"
+              class="mt-2 w-full rounded-xl border border-emerald-200 bg-white px-4 py-2 outline-none transition-shadow focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:bg-slate-950/40 dark:border-emerald-500/20 dark:text-emerald-50"
+            />
+            <p
+              id="searchNameHint"
+              class="mt-2 text-xs font-light leading-relaxed text-slate-600 dark:text-slate-400"
+            >
+              La API entiende mejor los nombres en
+              <span lang="en" class="font-semibold text-slate-700 dark:text-slate-300">inglés</span> (p. ej.
+              <span lang="en" class="font-medium">lion</span>,
+              <span lang="en" class="font-medium">shark</span>). Los hábitats suelen ir en inglés (
+              <span lang="en" class="font-medium">plains</span>,
+              <span lang="en" class="font-medium">forest</span>). Para algunos animales comunes aceptamos también el
+              nombre en español gracias a sugerencias automáticas.
+            </p>
+            <p
+              class="mt-2 rounded-xl border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-xs font-light leading-snug text-sky-950 dark:border-sky-500/25 dark:bg-sky-950/30 dark:text-sky-100/90"
+              role="note"
+            >
+              <span class="font-semibold">Consejo:</span> para <span class="font-semibold">mejorar la búsqueda</span>,
+              escribe en <span lang="en">inglés</span> (es el idioma que usa la API). La
+              <span class="font-semibold">información en pantalla</span> la mostramos en
+              <span class="font-semibold">español</span> siempre que podamos: menús, etiquetas de la ficha y muchos
+              términos cortos; los textos largos que vienen de la API pueden seguir en inglés.
+            </p>
+          </div>
+          <button
+            id="btnSearch"
+            aria-label="Buscar animal"
+            type="button"
+            aria-busy="false"
+            class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-6 py-2.5 font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70 transition-colors"
+          >
+            <span id="btnSearchLabel">Buscar</span>
+            <svg
+              id="btnSearchSpinner"
+              class="ml-3 hidden h-5 w-5 animate-spin text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div id="statusMessage" class="mt-4 hidden rounded-2xl border border-emerald-200 bg-white p-3 text-sm text-slate-800 transition-colors duration-500 dark:bg-slate-900 dark:border-emerald-500/30 dark:text-emerald-50">
+          <span id="statusText"></span>
+        </div>
+      </section>
+
+      <!-- Listado por hábitat (varias especies) -->
+      <section
+        id="habitatResultsSection"
+        class="hidden mt-6 rounded-3xl border border-emerald-200 bg-white/90 p-5 shadow-sm backdrop-blur transition-colors dark:border-emerald-500/25 dark:bg-slate-900/80"
+        aria-labelledby="habitatResultsHeading"
+      >
+        <h2 id="habitatResultsHeading" class="text-xl font-extrabold text-emerald-900 dark:text-emerald-200">
+          Especies en este hábitat
+        </h2>
+        <p id="habitatResultsSummary" class="mt-2 text-sm font-light text-slate-600 dark:text-slate-300"></p>
+        <p
+          id="habitatResultsNote"
+          class="mt-2 hidden rounded-xl border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-xs font-light text-amber-950 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-100/90"
+        ></p>
+        <div
+          id="habitatResultsGrid"
+          class="mt-4 grid max-h-[min(70vh,560px)] grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3"
+        ></div>
+      </section>
+
+      <!-- Card de Animal (Ficha de Campo) -->
+      <section class="mt-6 flex justify-center">
+        <div
+          id="animalCard"
+          class="hidden max-w-md rounded-3xl bg-white shadow-xl overflow-hidden border border-slate-200 transition-colors duration-500 dark:bg-slate-900 dark:border-emerald-500/40"
+        >
+          <!-- Imagen -->
+          <div class="relative h-64 w-full overflow-hidden bg-emerald-50 dark:bg-slate-950/40">
+            <div
+              id="imageSkeleton"
+              class="absolute inset-0 hidden animate-pulse bg-slate-200 dark:bg-slate-800/70"
+              aria-hidden="true"
+            ></div>
+            <img
+              id="resultImage"
+              src=""
+              alt="Imagen del animal"
+              class="h-64 w-full object-cover opacity-0 transition-opacity duration-500 transition-transform duration-300 ease-out hover:scale-105"
+            />
+          </div>
+
+          <!-- Cuerpo -->
+          <div class="p-6">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="resultName" class="text-3xl font-bold text-slate-800 leading-tight dark:text-slate-50">—</h2>
+                <p id="resultScientificName" class="mt-1 italic font-light text-slate-500 dark:text-slate-400">—</p>
+              </div>
+            </div>
+
+            <div
+              id="riskBanner"
+              class="mt-4 hidden rounded-xl bg-red-600 px-3 py-2 text-center text-sm font-extrabold text-white shadow-md animate-pulse-red dark:bg-red-700"
+              role="alert"
+              aria-live="assertive"
+            >
+              🚨 ESPECIE EN RIESGO: Su población está disminuyendo
+            </div>
+
+            <!-- Grid de Taxonomía 2x2 -->
+            <div id="taxGrid" class="mt-4 rounded-2xl bg-emerald-50 p-4 grid grid-cols-2 gap-3 dark:bg-slate-800/70">
+              <div class="rounded-2xl bg-white/70 p-3 transition-colors duration-500 dark:bg-slate-900/30 dark:border dark:border-emerald-500/10">
+                <div class="text-xl">🌍</div>
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-800/70 dark:text-slate-200/70">
+                  <span>Reino</span>
+                  <button
+                    type="button"
+                    class="rounded-full px-1 text-xs text-slate-600 hover:bg-slate-200/80 dark:text-slate-300 dark:hover:bg-slate-800/80"
+                    title="El reino es la categoría taxonómica más amplia (p. ej. Animalia). Agrupa seres vivos con rasgos fundamentales similares."
+                    aria-label="Información: qué es el Reino en taxonomía"
+                  >
+                    ℹ️
+                  </button>
+                </div>
+                <div id="taxKingdom" class="mt-1 text-sm font-bold text-slate-800 dark:text-slate-50">—</div>
+              </div>
+              <div class="rounded-2xl bg-white/70 p-3 transition-colors duration-500 dark:bg-slate-900/30 dark:border dark:border-emerald-500/10">
+                <div class="text-xl">🦴</div>
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-800/70 dark:text-slate-200/70">
+                  <span>Clase</span>
+                  <button
+                    type="button"
+                    class="rounded-full px-1 text-xs text-slate-600 hover:bg-slate-200/80 dark:text-slate-300 dark:hover:bg-slate-800/80"
+                    title="La clase agrupa organismos dentro de un filo según características del cuerpo y desarrollo (p. ej. Mammalia)."
+                    aria-label="Información: qué es la Clase en taxonomía"
+                  >
+                    ℹ️
+                  </button>
+                </div>
+                <div id="taxClass" class="mt-1 text-sm font-bold text-slate-800 dark:text-slate-50">—</div>
+              </div>
+              <div class="rounded-2xl bg-white/70 p-3 transition-colors duration-500 dark:bg-slate-900/30 dark:border dark:border-emerald-500/10">
+                <div class="text-xl">🐾</div>
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-800/70 dark:text-slate-200/70">
+                  <span>Orden</span>
+                  <button
+                    type="button"
+                    class="rounded-full px-1 text-xs text-slate-600 hover:bg-slate-200/80 dark:text-slate-300 dark:hover:bg-slate-800/80"
+                    title="El orden subdivide una clase en grupos más específicos con rasgos compartidos (p. ej. Carnivora)."
+                    aria-label="Información: qué es el Orden en taxonomía"
+                  >
+                    ℹ️
+                  </button>
+                </div>
+                <div id="taxOrder" class="mt-1 text-sm font-bold text-slate-800 dark:text-slate-50">—</div>
+              </div>
+              <div class="rounded-2xl bg-white/70 p-3 transition-colors duration-500 dark:bg-slate-900/30 dark:border dark:border-emerald-500/10">
+                <div class="text-xl">🧬</div>
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-800/70 dark:text-slate-200/70">
+                  <span>Familia</span>
+                  <button
+                    type="button"
+                    class="rounded-full px-1 text-xs text-slate-600 hover:bg-slate-200/80 dark:text-slate-300 dark:hover:bg-slate-800/80"
+                    title="La familia agrupa géneros estrechamente emparentados (p. ej. Felidae para los felinos)."
+                    aria-label="Información: qué es la Familia en taxonomía"
+                  >
+                    ℹ️
+                  </button>
+                </div>
+                <div id="taxFamily" class="mt-1 text-sm font-bold text-slate-800 dark:text-slate-50">—</div>
+              </div>
+            </div>
+
+            <!-- Botón -->
+            <div id="saveArea" class="mt-5">
+              <button
+                id="btnSave"
+                type="button"
+                disabled
+                aria-label="Guardar en favoritos"
+                class="w-full rounded-2xl bg-emerald-600 px-5 py-3 text-xl font-extrabold text-white shadow-lg ring-2 ring-emerald-400/40 transition-colors hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                ⭐ Guardar en Favoritos
+              </button>
+              <div id="saveError" class="mt-3 hidden rounded-2xl bg-amber-50 border border-amber-200 p-3 text-sm text-slate-800 dark:bg-amber-950/30 dark:border-amber-400/20 dark:text-slate-50"></div>
+            </div>
+
+            <!-- No results -->
+            <div
+              id="noResultsState"
+              class="hidden mt-8 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 p-4 text-center dark:bg-slate-900/70 dark:border-emerald-500/20"
+            >
+              <div class="text-4xl">🌳</div>
+              <div class="mt-2 text-lg font-extrabold text-slate-800 dark:text-slate-50">
+                No encontramos ese animal en la selva digital
+              </div>
+              <div class="mt-1 text-sm font-light text-slate-600 dark:text-slate-300">
+                Prueba con otro nombre.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Galería -->
+      <section class="mt-10 rounded-3xl bg-white/80 p-5 shadow-sm backdrop-blur transition-colors duration-500 dark:bg-slate-900/70 dark:border dark:border-emerald-500/20">
+        <h2 class="text-2xl font-extrabold text-emerald-900 dark:text-emerald-200">Bitácora de Avistamientos</h2>
+        <p id="favoritesLoading" class="mt-2 text-sm text-slate-600 dark:text-slate-400">Cargando...</p>
+
+        <!-- Barra de Progreso -->
+        <div class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 transition-colors duration-500 dark:border-emerald-500/20 dark:bg-slate-900/40">
+          <div id="progressText" class="text-sm font-semibold text-slate-800 transition-colors duration-500 dark:text-emerald-50">
+            Nivel de Explorador: 0 avistamientos registrados
+          </div>
+          <div class="mt-3 h-3 overflow-hidden rounded-full bg-orange-50 dark:bg-slate-800">
+            <div
+              id="progressBar"
+                role="progressbar"
+                aria-label="Nivel de Explorador"
+                aria-valuemin="0"
+                aria-valuemax="15"
+                aria-valuenow="0"
+                class="h-full w-0 rounded-full bg-orange-500 transition-all duration-500 transition-colors"
+            ></div>
+          </div>
+        </div>
+        <div id="favoritesGrid" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+      </section>
+
+      <!-- Trivia / Quiz -->
+      <section
+        class="mt-10 rounded-3xl bg-white/80 p-5 shadow-sm backdrop-blur transition-colors duration-500 dark:bg-slate-900/70 dark:border dark:border-emerald-500/20"
+        aria-labelledby="quizHeading"
+      >
+        <h2 id="quizHeading" class="text-2xl font-extrabold text-emerald-900 dark:text-emerald-200">Trivia WildInfo</h2>
+        <p class="mt-2 text-sm font-light text-slate-600 dark:text-slate-300">
+          Preguntas al azar sobre hábitat, taxonomía (reino, orden), dieta o nombre científico, usando los datos
+          guardados de tu bitácora (mínimo 3 avistamientos).
+        </p>
+        <button
+          id="btnQuizStart"
+          type="button"
+          class="mt-4 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-800"
+          aria-label="Generar nueva pregunta de trivia"
+        >
+          Nueva pregunta
+        </button>
+        <div id="quizPanel" class="mt-5 hidden rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 dark:border-emerald-500/20 dark:bg-slate-900/50">
+          <p id="quizQuestion" class="text-base font-semibold text-slate-800 dark:text-slate-50"></p>
+          <div id="quizOptions" class="mt-4 flex flex-col gap-2"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Modal ficha enciclopedia (bitácora) -->
+    <div
+      id="sightingModal"
+      class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sightingModalHeading"
+    >
+      <div
+        id="sightingModalPanel"
+        class="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/5 dark:bg-slate-900 dark:ring-emerald-500/20"
+      >
+        <div class="flex shrink-0 items-center justify-end border-b border-emerald-100 px-4 py-3 dark:border-emerald-500/20">
+          <button
+            id="sightingModalClose"
+            type="button"
+            class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+          >
+            Cerrar
+          </button>
+        </div>
+        <div id="sightingModalBody" class="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-2"></div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:8000";
+      const elSearchName = document.getElementById("searchName");
+      const btnSearch = document.getElementById("btnSearch");
+      const btnSave = document.getElementById("btnSave");
+      const btnSearchLabel = document.getElementById("btnSearchLabel");
+      const btnSearchSpinner = document.getElementById("btnSearchSpinner");
+
+      const statusMessage = document.getElementById("statusMessage");
+      const statusText = document.getElementById("statusText");
+      const animalCard = document.getElementById("animalCard");
+      const saveError = document.getElementById("saveError");
+      const toast = document.getElementById("toast");
+
+      const resultImage = document.getElementById("resultImage");
+      const resultName = document.getElementById("resultName");
+      const resultScientificName = document.getElementById("resultScientificName");
+
+      const taxKingdom = document.getElementById("taxKingdom");
+      const taxClass = document.getElementById("taxClass");
+      const taxOrder = document.getElementById("taxOrder");
+      const taxFamily = document.getElementById("taxFamily");
+      const taxGrid = document.getElementById("taxGrid");
+      const saveArea = document.getElementById("saveArea");
+      const noResultsState = document.getElementById("noResultsState");
+      const habitatResultsSection = document.getElementById("habitatResultsSection");
+      const habitatResultsGrid = document.getElementById("habitatResultsGrid");
+      const habitatResultsSummary = document.getElementById("habitatResultsSummary");
+      const habitatResultsNote = document.getElementById("habitatResultsNote");
+
+      const favoritesLoading = document.getElementById("favoritesLoading");
+      const favoritesGrid = document.getElementById("favoritesGrid");
+
+      const themeToggle = document.getElementById("themeToggle");
+      const iconSun = document.getElementById("iconSun");
+      const iconMoon = document.getElementById("iconMoon");
+
+      const progressText = document.getElementById("progressText");
+      const progressBar = document.getElementById("progressBar");
+      const imageSkeleton = document.getElementById("imageSkeleton");
+      const riskBanner = document.getElementById("riskBanner");
+
+      const btnQuizStart = document.getElementById("btnQuizStart");
+      const quizPanel = document.getElementById("quizPanel");
+      const quizQuestion = document.getElementById("quizQuestion");
+      const quizOptions = document.getElementById("quizOptions");
+
+      const sightingModal = document.getElementById("sightingModal");
+      const sightingModalBody = document.getElementById("sightingModalBody");
+      const sightingModalClose = document.getElementById("sightingModalClose");
+
+      let currentAnimalClean = null; // Datos "limpios" listos para POST /favorites
+
+      const imagePlaceholder =
+        "data:image/svg+xml;charset=utf-8," +
+        encodeURIComponent(
+          "<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='600'><rect width='100%' height='100%' fill='%23d1fae5'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%230f766e' font-family='Arial' font-size='42'>Sin imagen</text></svg>"
+        );
+
+      function normalizeImageSrc(url) {
+        if (!url || typeof url !== "string") return imagePlaceholder;
+        const u = url.trim();
+        if (u.startsWith("http://") || u.startsWith("https://")) return u;
+        if (u.startsWith("data:image/")) return u;
+        return imagePlaceholder;
+      }
+
+      function showStatus(text) {
+        statusText.textContent = text;
+        statusMessage.classList.remove("hidden");
+      }
+
+      function hideStatus() {
+        statusMessage.classList.add("hidden");
+        statusText.textContent = "";
+      }
+
+      function setSaveError(text) {
+        saveError.textContent = text;
+        saveError.classList.remove("hidden");
+      }
+
+      function clearSaveError() {
+        saveError.textContent = "";
+        saveError.classList.add("hidden");
+      }
+
+      function showToast(message) {
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        window.clearTimeout(showToast._timer);
+        showToast._timer = window.setTimeout(() => {
+          toast.classList.add("hidden");
+        }, 2200);
+      }
+
+      const searchSuccessClasses = [
+        "border-emerald-500",
+        "focus:border-emerald-500",
+        "ring-2",
+        "ring-emerald-400",
+        "dark:border-emerald-400",
+        "dark:ring-emerald-500/40",
+      ];
+
+      function setSearchSuccess(ok) {
+        if (!elSearchName) return;
+        searchSuccessClasses.forEach((c) => elSearchName.classList.toggle(c, !!ok));
+      }
+
+      function setSearchInputInvalid(invalid) {
+        if (!elSearchName) return;
+        elSearchName.setAttribute("aria-invalid", invalid ? "true" : "false");
+
+        const invalidClasses = [
+          "border-red-500",
+          "focus:border-red-500",
+          "ring-2",
+          "ring-red-200",
+          "dark:border-red-400",
+          "dark:ring-red-900/30",
+        ];
+        const validClassesToRemove = ["border-red-500", "focus:border-red-500", "ring-2", "ring-red-200", "dark:border-red-400", "dark:ring-red-900/30"];
+
+        if (invalid) {
+          setSearchSuccess(false);
+          validClassesToRemove.forEach((c) => elSearchName.classList.remove(c));
+          invalidClasses.forEach((c) => elSearchName.classList.add(c));
+        } else {
+          validClassesToRemove.forEach((c) => elSearchName.classList.remove(c));
+        }
+      }
+
+      function setSearchLoading(loading) {
+        btnSearch.disabled = loading;
+        btnSearch.setAttribute("aria-busy", loading ? "true" : "false");
+        btnSearchSpinner.classList.toggle("hidden", !loading);
+        btnSearchLabel.textContent = loading ? "Buscando..." : "Buscar";
+      }
+
+      function safeText(value) {
+        if (value === null || value === undefined) return null;
+        const s = String(value).trim();
+        return s.length ? s : null;
+      }
+
+      const TAXONOMY_LABELS = [
+        ["kingdom", "Reino"],
+        ["phylum", "Filo"],
+        ["class", "Clase"],
+        ["order", "Orden"],
+        ["family", "Familia"],
+        ["genus", "Género"],
+        ["scientific_name", "Nombre científico"],
+      ];
+
+      const CHARACTERISTIC_KEY_ES = {
+        prey: "Presa",
+        name_of_young: "Nombre de las crías",
+        group_behavior: "Comportamiento grupal",
+        estimated_population_size: "Población estimada",
+        biggest_threat: "Mayor amenaza",
+        most_distinctive_feature: "Rasgo más distintivo",
+        gestation_period: "Período de gestación",
+        average_litter_size: "Tamaño promedio de camada",
+        litter_size: "Tamaño de camada",
+        habitat: "Hábitat",
+        diet: "Dieta",
+        lifestyle: "Estilo de vida",
+        common_name: "Nombre común",
+        number_of_species: "Número de especies",
+        location: "Ubicación",
+        origin: "Origen",
+        slogan: "Lema",
+        group: "Grupo",
+        color: "Color",
+        skin_type: "Tipo de piel / recubrimiento",
+        top_speed: "Velocidad máxima",
+        lifespan: "Esperanza de vida",
+        weight: "Peso",
+        height: "Altura",
+        length: "Longitud",
+        age_of_sexual_maturity: "Edad de madurez sexual",
+        age_of_weaning: "Edad de destete",
+        type: "Tipo",
+        predators: "Depredadores",
+        preyed_by: "Presa de",
+        conservation_status: "Estado de conservación",
+        population_trend: "Tendencia poblacional",
+        type_of_food: "Tipo de alimento",
+        main_prey: "Presa principal",
+      };
+
+      /** Nombres taxonómicos en inglés/latín → etiqueta en español para la ficha y la bitácora. */
+      const TAXONOMY_VALUE_ES = {
+        animalia: "Reino animal (Animalia)",
+        plantae: "Plantas (Plantae)",
+        fungi: "Hongos",
+        chromista: "Cromistas",
+        bacteria: "Bacterias",
+        archaea: "Arqueas",
+        mammalia: "Mamíferos",
+        aves: "Aves",
+        reptilia: "Reptiles",
+        amphibia: "Anfibios",
+        actinopterygii: "Peces óseos",
+        chondrichthyes: "Condrictios (tiburones y rayas)",
+        agnatha: "Agnatos",
+        insecta: "Insectos",
+        arachnida: "Arácnidos",
+        crustacea: "Crustáceos",
+        mollusca: "Moluscos",
+        cephalopoda: "Cefalópodos",
+        carnivora: "Carnívoros",
+        rodentia: "Roedores",
+        primates: "Primates",
+        cetacea: "Cetáceos",
+        artiodactyla: "Artiodáctilos",
+        perissodactyla: "Perisodáctilos",
+        proboscidea: "Proboscídeos",
+        pilosa: "Pilosos (perezosos, osos hormigueros)",
+        diprotodontia: "Diprotodontia (marsupiales herbívoros)",
+        marsupialia: "Marsupiales",
+        monotremata: "Monotremas",
+        squamata: "Escamosos (lagartos y serpientes)",
+        testudines: "Tortugas",
+        crocodilia: "Crocodilianos",
+        passeriformes: "Paseriformes",
+        accipitriformes: "Accipitriformes (aves rapaces)",
+        falconiformes: "Falconiformes",
+        galliformes: "Galliformes",
+        charadriiformes: "Caradriformes (aves playeras)",
+        sphenisciformes: "Pingüinos",
+        struthioniformes: "Avestruces y afines",
+        felidae: "Felinos",
+        canidae: "Cánidos",
+        ursidae: "Osos",
+        hyaenidae: "Hienas",
+        mustelidae: "Mustélidos (comadrejas, nutrias…)",
+        phocidae: "Focas",
+        otariidae: "Otáridos (lobos marinos)",
+        delphinidae: "Delfines",
+        balaenopteridae: "Rorcuales",
+        elephantidae: "Elefantes",
+        equidae: "Équidos",
+        bovidae: "Bóvidos",
+        cervidae: "Cérvidos",
+        suidae: "Súidos",
+        macropodidae: "Macrópodos (canguros)",
+      };
+
+      const COMMON_VALUE_ES = {
+        carnivore: "Carnívoro",
+        herbivore: "Herbívoro",
+        omnivore: "Omnívoro",
+        insectivore: "Insectívoro",
+        piscivore: "Piscívoro",
+        mammal: "Mamífero",
+        mammals: "Mamíferos",
+        bird: "Ave",
+        birds: "Aves",
+        reptile: "Reptil",
+        reptiles: "Reptiles",
+        amphibian: "Anfibio",
+        amphibians: "Anfibios",
+        fish: "Pez",
+        fishes: "Peces",
+        plains: "Llanuras",
+        grassland: "Pastizal",
+        grasslands: "Pastizales",
+        forest: "Bosque",
+        woodland: "Bosque / arbolado",
+        jungle: "Selva",
+        rainforest: "Selva tropical",
+        ocean: "Océano",
+        sea: "Mar",
+        desert: "Desierto",
+        tundra: "Tundra",
+        mountain: "Montaña",
+        mountains: "Montañas",
+        river: "Río",
+        lake: "Lago",
+        wetland: "Humedal",
+        swamp: "Pantano",
+        savanna: "Sabana",
+        savannah: "Sabana",
+        coastal: "Costero",
+        cave: "Cueva",
+        arctic: "Ártico",
+        polar: "Polar",
+        "diurnal": "Diurno",
+        "nocturnal": "Nocturno",
+        "crepuscular": "Crepuscular",
+        solitary: "Solitario",
+        pack: "Manada",
+        flock: "Bandada",
+        pride: "Manada (leones)",
+        herd: "Rebaño",
+        marine: "Marino",
+        freshwater: "Agua dulce",
+        tropical: "Tropical",
+        temperate: "Templado",
+        subtropical: "Subtropical",
+        arid: "Árido",
+        terrestrial: "Terrestre",
+        aerial: "Aéreo",
+        arboreal: "Arbóreo",
+        burrowing: "Fosorial / excavador",
+        "open woodland": "Arbolado abierto",
+        "closed woodland": "Arbolado cerrado",
+        "open grassland": "Pastizal abierto",
+        "shallow marine": "Mar somero",
+        "deep ocean": "Océano profundo",
+        worldwide: "En todo el mundo",
+        global: "Global",
+      };
+
+      function formatTaxonomyValue(val) {
+        if (val == null) return null;
+        const s = String(val).trim();
+        if (!s) return null;
+        const k = s.toLowerCase();
+        if (TAXONOMY_VALUE_ES[k]) return TAXONOMY_VALUE_ES[k];
+        return s;
+      }
+
+      /** Traduce listas de hábitats o valores compuestos (p. ej. "Grassland, Forest"). */
+      function translatePhraseWithKnownTokens(raw) {
+        if (raw == null || typeof raw !== "string") return raw;
+        const s = raw.trim();
+        if (!s) return raw;
+        const parts = s.split(/\s*[,;/]\s*|\s+and\s+/i).filter((p) => p.trim().length);
+        if (parts.length <= 1) {
+          const tl = s.toLowerCase();
+          return COMMON_VALUE_ES[tl] || s;
+        }
+        return parts
+          .map((p) => {
+            const t = p.trim().toLowerCase();
+            return COMMON_VALUE_ES[t] || p.trim();
+          })
+          .join(", ");
+      }
+
+      /** Resume estados UICN o frases típicas en inglés a una etiqueta en español. */
+      function formatConservationDisplay(s) {
+        if (!s || !String(s).trim()) return null;
+        const t = String(s).toLowerCase();
+        if (t.includes("critically endangered")) return "En peligro crítico";
+        if (t.includes("endangered")) return "En peligro";
+        if (t.includes("vulnerable")) return "Vulnerable";
+        if (t.includes("near threatened")) return "Casi amenazado";
+        if (t.includes("least concern")) return "Preocupación menor";
+        if (t.includes("extinct in the wild")) return "Extinto en estado silvestre";
+        if (/\bextinct\b/.test(t) && !t.includes("extinct in")) return "Extinto";
+        if (t.includes("data deficient")) return "Datos insuficientes";
+        return String(s).trim();
+      }
+
+      function formatCharacteristicLabel(key) {
+        if (!key) return "";
+        const k = String(key).toLowerCase();
+        if (CHARACTERISTIC_KEY_ES[k]) return CHARACTERISTIC_KEY_ES[k];
+        return String(key)
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+      }
+
+      function formatCharacteristicValue(val) {
+        if (val === null || val === undefined) return "—";
+        if (typeof val === "object") {
+          try {
+            return JSON.stringify(val);
+          } catch (e) {
+            return String(val);
+          }
+        }
+        if (typeof val === "string") {
+          const raw = String(val);
+          const tl = raw.trim().toLowerCase();
+          if (COMMON_VALUE_ES[tl]) return COMMON_VALUE_ES[tl];
+          if (/[,;/]|\band\b/i.test(raw)) return translatePhraseWithKnownTokens(raw);
+          return raw;
+        }
+        return String(val);
+      }
+
+      function locationsToList(locs) {
+        if (locs == null) return [];
+        if (Array.isArray(locs))
+          return locs
+            .map((x) => translatePhraseWithKnownTokens(String(x)))
+            .filter((s) => String(s).trim().length);
+        if (typeof locs === "string")
+          return locs.trim() ? [translatePhraseWithKnownTokens(locs.trim())] : [];
+        if (typeof locs === "object") {
+          return Object.entries(locs).map(([k, v]) => `${k}: ${formatCharacteristicValue(v)}`);
+        }
+        return [];
+      }
+
+      function closeSightingModal() {
+        if (!sightingModal) return;
+        sightingModal.classList.add("hidden");
+        sightingModalBody.innerHTML = "";
+        document.body.classList.remove("overflow-hidden");
+      }
+
+      function openSightingModal(item) {
+        if (!sightingModal || !sightingModalBody) return;
+        sightingModalBody.innerHTML = "";
+
+        const header = document.createElement("div");
+        header.className = "mb-6 text-center";
+
+        const img = document.createElement("img");
+        img.src = normalizeImageSrc(item.image_url);
+        img.alt = item.name ? `Foto de ${item.name}` : "Foto del animal";
+        img.className =
+          "mx-auto max-h-56 w-full max-w-md rounded-2xl object-cover shadow-md ring-1 ring-emerald-100 dark:ring-emerald-500/30";
+        img.addEventListener("error", () => {
+          img.src = imagePlaceholder;
+        });
+
+        const title = document.createElement("h2");
+        title.id = "sightingModalHeading";
+        title.className = "mt-4 text-2xl font-extrabold text-emerald-900 dark:text-emerald-200";
+        title.textContent = item.name || "Sin nombre";
+
+        const sci = document.createElement("p");
+        sci.className = "mt-1 text-sm italic text-slate-600 dark:text-slate-400";
+        sci.textContent = item.scientific_name || "";
+
+        header.appendChild(img);
+        header.appendChild(title);
+        if (item.scientific_name) header.appendChild(sci);
+        sightingModalBody.appendChild(header);
+
+        function addSectionHeading(text) {
+          const h = document.createElement("h3");
+          h.className = "mb-3 text-lg font-bold text-slate-800 dark:text-slate-100";
+          h.textContent = text;
+          sightingModalBody.appendChild(h);
+        }
+
+        const tax = item.taxonomy && typeof item.taxonomy === "object" ? item.taxonomy : null;
+        addSectionHeading("Taxonomía");
+        const taxList = document.createElement("ul");
+        taxList.className = "mb-6 list-inside list-disc space-y-1 text-sm text-slate-700 dark:text-slate-300";
+        let taxRows = 0;
+        if (tax) {
+          TAXONOMY_LABELS.forEach(([key, label]) => {
+            const v = tax[key];
+            if (v == null || String(v).trim() === "") return;
+            const li = document.createElement("li");
+            const strong = document.createElement("strong");
+            strong.textContent = `${label}: `;
+            li.appendChild(strong);
+            const display =
+              key === "scientific_name" ? String(v).trim() : formatTaxonomyValue(v) || String(v).trim();
+            li.appendChild(document.createTextNode(display));
+            taxList.appendChild(li);
+            taxRows++;
+          });
+          Object.keys(tax).forEach((k) => {
+            if (TAXONOMY_LABELS.some(([key]) => key === k)) return;
+            const v = tax[k];
+            if (v == null || String(v).trim() === "") return;
+            const li = document.createElement("li");
+            const strong = document.createElement("strong");
+            strong.textContent = `${formatCharacteristicLabel(k)}: `;
+            li.appendChild(strong);
+            const isSciName = String(k).toLowerCase() === "scientific_name" || String(k).toLowerCase() === "scientificname";
+            const text = isSciName ? String(v).trim() : formatTaxonomyValue(v) || formatCharacteristicValue(v);
+            li.appendChild(document.createTextNode(text));
+            taxList.appendChild(li);
+            taxRows++;
+          });
+        }
+        if (!taxRows) {
+          const li = document.createElement("li");
+          li.className = "list-none pl-0 text-slate-500 dark:text-slate-400";
+          li.textContent = "No hay taxonomía guardada para este avistamiento.";
+          taxList.appendChild(li);
+        }
+        sightingModalBody.appendChild(taxList);
+
+        addSectionHeading("Características");
+        const chars = item.characteristics && typeof item.characteristics === "object" ? item.characteristics : null;
+        const charGrid = document.createElement("div");
+        charGrid.className =
+          "mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm text-slate-700 dark:text-slate-300";
+        if (chars && Object.keys(chars).length) {
+          Object.entries(chars).forEach(([key, val]) => {
+            const cell = document.createElement("div");
+            cell.className = "rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-500/25 dark:bg-slate-800/50";
+            const strong = document.createElement("strong");
+            strong.className = "text-slate-900 dark:text-slate-50";
+            strong.textContent = `${formatCharacteristicLabel(key)}: `;
+            cell.appendChild(strong);
+            cell.appendChild(document.createTextNode(formatCharacteristicValue(val)));
+            charGrid.appendChild(cell);
+          });
+        } else {
+          const empty = document.createElement("p");
+          empty.className = "col-span-full text-slate-500 dark:text-slate-400";
+          empty.textContent = "No hay características detalladas guardadas.";
+          charGrid.appendChild(empty);
+        }
+        sightingModalBody.appendChild(charGrid);
+
+        addSectionHeading("Localización");
+        const locList = document.createElement("ul");
+        locList.className = "list-inside list-disc space-y-1 text-sm text-slate-700 dark:text-slate-300";
+        const fromApi = locationsToList(item.locations);
+        const lines = [];
+        if (item.habitat && String(item.habitat).trim()) {
+          lines.push({
+            label: "Hábitat (resumen)",
+            text: translatePhraseWithKnownTokens(String(item.habitat).trim()),
+          });
+        }
+        fromApi.forEach((t) => lines.push({ label: null, text: t }));
+        if (!lines.length) {
+          const li = document.createElement("li");
+          li.className = "list-none pl-0 text-slate-500 dark:text-slate-400";
+          li.textContent = "Sin datos de localización guardados.";
+          locList.appendChild(li);
+        } else {
+          lines.forEach(({ label, text }) => {
+            const li = document.createElement("li");
+            if (label) {
+              const strong = document.createElement("strong");
+              strong.textContent = `${label}: `;
+              li.appendChild(strong);
+            }
+            li.appendChild(document.createTextNode(text));
+            locList.appendChild(li);
+          });
+        }
+        sightingModalBody.appendChild(locList);
+
+        const foot = document.createElement("p");
+        foot.className =
+          "mt-6 border-t border-emerald-100 pt-4 text-center text-[11px] font-light text-slate-500 dark:border-emerald-500/20 dark:text-slate-400";
+        foot.setAttribute("lang", "es");
+        foot.textContent =
+          "Los textos largos o nombres propios pueden seguir en inglés (fuente de datos). Los nombres científicos son latinos y son los mismos en todo el mundo.";
+        sightingModalBody.appendChild(foot);
+
+        sightingModal.classList.remove("hidden");
+        document.body.classList.add("overflow-hidden");
+      }
+
+      if (sightingModalClose) sightingModalClose.addEventListener("click", closeSightingModal);
+      if (sightingModal) {
+        sightingModal.addEventListener("click", (e) => {
+          if (e.target === sightingModal) closeSightingModal();
+        });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (!sightingModal || sightingModal.classList.contains("hidden")) return;
+        closeSightingModal();
+      });
+
+      function extractTaxonomyParts(taxonomy) {
+        // Devuelve { kingdom, className, order, family } (o null si no existe).
+        const empty = { kingdom: null, className: null, order: null, family: null };
+        if (!taxonomy || typeof taxonomy === "string") return empty;
+        if (typeof taxonomy !== "object") return empty;
+
+        const kingdom =
+          safeText(taxonomy.kingdom) ||
+          safeText(taxonomy.Reino) ||
+          safeText(taxonomy.regnum) ||
+          safeText(taxonomy.kingdom_name) ||
+          safeText(taxonomy.reino);
+
+        const className =
+          safeText(taxonomy.class) ||
+          safeText(taxonomy.Clase) ||
+          safeText(taxonomy.class_name) ||
+          safeText(taxonomy.clase);
+
+        const order =
+          safeText(taxonomy.order) ||
+          safeText(taxonomy.Orden) ||
+          safeText(taxonomy.order_name) ||
+          safeText(taxonomy.orden);
+
+        const family =
+          safeText(taxonomy.family) ||
+          safeText(taxonomy.Familia) ||
+          safeText(taxonomy.family_name) ||
+          safeText(taxonomy.familia);
+
+        return { kingdom, className, order, family };
+      }
+
+      function getHabitatFromLocations(locations) {
+        // Regla solicitada: usa el primer elemento de locations.
+        if (Array.isArray(locations)) return locations[0] ?? null;
+        return locations ?? null;
+      }
+
+      function getHabitatFromCharacteristicsData(data) {
+        const ch = data.characteristics;
+        if (ch && typeof ch === "object") {
+          const h = ch.habitat ?? ch.Habitat;
+          if (h != null && String(h).trim()) return String(h).trim();
+        }
+        return null;
+      }
+
+      function applySearchResultToState(data) {
+        clearSaveError();
+        const habitat =
+          getHabitatFromCharacteristicsData(data) || getHabitatFromLocations(data.locations);
+        const rawImageUrl = data.image_url ? String(data.image_url) : null;
+        const normalizedImageUrl = rawImageUrl ? normalizeImageSrc(rawImageUrl) : null;
+        const imageUrl =
+          normalizedImageUrl && normalizedImageUrl !== imagePlaceholder ? normalizedImageUrl : null;
+        const scientificName = data.scientific_name ? String(data.scientific_name) : null;
+        const commonName = data.name ? String(data.name) : null;
+
+        const locRaw = data.locations;
+        const locationsPayload =
+          Array.isArray(locRaw) || (locRaw !== null && locRaw !== undefined && typeof locRaw === "object")
+            ? locRaw
+            : locRaw != null
+              ? [String(locRaw)]
+              : null;
+
+        currentAnimalClean = {
+          name: commonName,
+          scientific_name: scientificName,
+          image_url: imageUrl,
+          habitat: habitat ? String(habitat) : null,
+          conservation_status: data.conservation_status ? String(data.conservation_status) : "",
+          fun_fact: data.fun_fact ? String(data.fun_fact) : "",
+          taxonomy: data.taxonomy && typeof data.taxonomy === "object" ? data.taxonomy : null,
+          characteristics:
+            data.characteristics && typeof data.characteristics === "object" ? data.characteristics : null,
+          locations: locationsPayload,
+        };
+
+        const canSave =
+          currentAnimalClean.name &&
+          currentAnimalClean.scientific_name &&
+          currentAnimalClean.image_url &&
+          currentAnimalClean.habitat;
+        btnSave.disabled = !canSave;
+        if (!canSave) {
+          setSaveError(
+            "Faltan imagen u hábitat para guardar. Si el listado no trajo foto, prueba otra especie o busca por nombre."
+          );
+        }
+      }
+
+      function renderHabitatResultsGrid(results) {
+        if (!habitatResultsGrid) return;
+        habitatResultsGrid.innerHTML = "";
+        results.forEach((item) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className =
+            "flex flex-col rounded-2xl border border-emerald-100 bg-emerald-50/30 p-3 text-left shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50/80 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/30 dark:bg-slate-900/50 dark:hover:bg-slate-800/70";
+          const title = document.createElement("div");
+          title.className = "font-bold text-slate-800 dark:text-slate-50";
+          title.textContent = item.name || "Sin nombre";
+
+          const sci = document.createElement("div");
+          sci.className = "mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400";
+          sci.textContent = item.scientific_name || "";
+
+          const habEl = document.createElement("div");
+          habEl.className = "mt-2 text-[11px] text-slate-600 dark:text-slate-400";
+          const habRaw =
+            getHabitatFromCharacteristicsData(item) || getHabitatFromLocations(item.locations) || "—";
+          const habText = formatCharacteristicValue(habRaw);
+          const strong = document.createElement("strong");
+          strong.textContent = "Hábitat: ";
+          habEl.appendChild(strong);
+          habEl.appendChild(document.createTextNode(habText));
+
+          btn.appendChild(title);
+          btn.appendChild(sci);
+          btn.appendChild(habEl);
+          btn.setAttribute("aria-label", `Ver ficha de ${item.name || "animal"}`);
+          btn.addEventListener("click", () => selectHabitatAnimal(item));
+          habitatResultsGrid.appendChild(btn);
+        });
+      }
+
+      function selectHabitatAnimal(item) {
+        if (habitatResultsSection) habitatResultsSection.classList.add("hidden");
+        if (habitatResultsGrid) habitatResultsGrid.innerHTML = "";
+        animalCard.classList.remove("hidden");
+        renderCardFromAnimal(item);
+        applySearchResultToState(item);
+      }
+
+      function renderCardFromAnimal(data) {
+        const imageUrl = data.image_url ? normalizeImageSrc(String(data.image_url)) : null;
+
+        if (riskBanner) {
+          if (data.at_risk) riskBanner.classList.remove("hidden");
+          else riskBanner.classList.add("hidden");
+        }
+
+        if (imageSkeleton) imageSkeleton.classList.add("hidden");
+        if (noResultsState) noResultsState.classList.add("hidden");
+        if (taxGrid) taxGrid.classList.remove("hidden");
+        if (saveArea) saveArea.classList.remove("hidden");
+
+        resultImage.classList.add("opacity-0");
+        resultImage.classList.remove("opacity-100");
+
+        resultImage.onload = () => {
+          resultImage.classList.remove("opacity-0");
+          resultImage.classList.add("opacity-100");
+        };
+        resultImage.onerror = () => {
+          // Si falla la imagen, mantenemos placeholder y evitamos que se quede a 0.
+          resultImage.classList.remove("opacity-0");
+          resultImage.classList.add("opacity-100");
+        };
+
+        resultImage.src = imageUrl || imagePlaceholder;
+        resultName.textContent = data.name ? String(data.name) : "—";
+        resultScientificName.textContent = data.scientific_name
+          ? String(data.scientific_name)
+          : "—";
+
+        const parts = extractTaxonomyParts(data.taxonomy);
+        taxKingdom.textContent = formatTaxonomyValue(parts.kingdom) || "—";
+        taxClass.textContent = formatTaxonomyValue(parts.className) || "—";
+        taxOrder.textContent = formatTaxonomyValue(parts.order) || "—";
+        taxFamily.textContent = formatTaxonomyValue(parts.family) || "—";
+
+        animalCard.classList.remove("hidden");
+      }
+
+      function syncThemeUI() {
+        const isDark = document.documentElement.classList.contains("dark");
+        if (isDark) {
+          iconSun.classList.remove("hidden");
+          iconMoon.classList.add("hidden");
+        } else {
+          iconMoon.classList.remove("hidden");
+          iconSun.classList.add("hidden");
+        }
+      }
+
+      function toggleDarkMode() {
+        const isDark = document.documentElement.classList.toggle("dark");
+        try {
+          localStorage.setItem("theme", isDark ? "dark" : "light");
+        } catch (e) {}
+        syncThemeUI();
+      }
+
+      // Sincroniza iconos con el modo aplicado (por script inicial de localStorage)
+      syncThemeUI();
+      themeToggle.addEventListener("click", toggleDarkMode);
+
+      function updateProgressBar(count) {
+        const maxForFull = 15;
+        const percent = Math.min((count / maxForFull) * 100, 100);
+        progressText.textContent = `Nivel de Explorador: ${count} avistamientos registrados`;
+        progressBar.style.width = `${percent}%`;
+        progressBar.setAttribute("aria-valuenow", String(count));
+
+        progressBar.classList.remove("bg-orange-500", "bg-amber-500", "bg-emerald-400");
+        if (count <= 5) progressBar.classList.add("bg-orange-500");
+        else if (count > 10) progressBar.classList.add("bg-emerald-400");
+        else progressBar.classList.add("bg-amber-500");
+
+        progressBar.classList.remove("animate-pulse");
+      }
+
+      async function fetchAnimal() {
+        hideStatus();
+        clearSaveError();
+        if (btnSearch.disabled) return;
+        setSearchInputInvalid(false);
+        setSearchSuccess(false);
+        setSearchLoading(true);
+
+        btnSave.disabled = true;
+        currentAnimalClean = null;
+
+        if (habitatResultsSection) habitatResultsSection.classList.add("hidden");
+        if (habitatResultsGrid) habitatResultsGrid.innerHTML = "";
+        if (habitatResultsNote) {
+          habitatResultsNote.textContent = "";
+          habitatResultsNote.classList.add("hidden");
+        }
+
+        // Estado visual: mostramos el card con skeleton mientras carga.
+        animalCard.classList.remove("hidden");
+        if (taxGrid) taxGrid.classList.add("hidden");
+        if (saveArea) saveArea.classList.add("hidden");
+        if (noResultsState) noResultsState.classList.add("hidden");
+        if (imageSkeleton) imageSkeleton.classList.remove("hidden");
+        if (riskBanner) riskBanner.classList.add("hidden");
+
+        resultImage.classList.add("opacity-0");
+        resultImage.classList.remove("opacity-100");
+        resultImage.src = "";
+        resultName.textContent = "Buscando...";
+        resultScientificName.textContent = "—";
+
+        const input = elSearchName.value.trim();
+        if (!input) {
+          setSearchInputInvalid(true);
+          setSearchSuccess(false);
+          if (habitatResultsSection) habitatResultsSection.classList.add("hidden");
+          if (imageSkeleton) imageSkeleton.classList.add("hidden");
+          if (taxGrid) taxGrid.classList.add("hidden");
+          if (saveArea) saveArea.classList.add("hidden");
+          if (noResultsState) noResultsState.classList.add("hidden");
+          animalCard.classList.add("hidden");
+          setSearchLoading(false);
+          showStatus("Escribe el nombre de un animal para buscar.");
+          return;
+        }
+
+        try {
+          const resp = await fetch(`${API_BASE}/animal/${encodeURIComponent(input)}`);
+          if (!resp.ok) {
+            const err = new Error(`HTTP ${resp.status}`);
+            err.status = resp.status;
+            throw err;
+          }
+
+          const data = await resp.json();
+
+          if (data.search_mode === "habitat_many" && Array.isArray(data.results) && data.results.length > 0) {
+            if (imageSkeleton) imageSkeleton.classList.add("hidden");
+            animalCard.classList.add("hidden");
+            if (taxGrid) taxGrid.classList.add("hidden");
+            if (saveArea) saveArea.classList.add("hidden");
+            if (noResultsState) noResultsState.classList.add("hidden");
+            if (riskBanner) riskBanner.classList.add("hidden");
+            if (habitatResultsSection) habitatResultsSection.classList.remove("hidden");
+            if (habitatResultsSummary) {
+              const q = data.habitat_query || input;
+              habitatResultsSummary.textContent = `${data.results.length} especies con hábitat compatible con «${q}» (campo habitat de API Ninjas y sinónimos). Toca una tarjeta para ver la ficha y guardar.`;
+            }
+            if (habitatResultsNote) {
+              if (data.listing_note) {
+                habitatResultsNote.textContent = data.listing_note;
+                habitatResultsNote.classList.remove("hidden");
+              } else {
+                habitatResultsNote.textContent = "";
+                habitatResultsNote.classList.add("hidden");
+              }
+            }
+            renderHabitatResultsGrid(data.results);
+            setSearchSuccess(true);
+            btnSave.disabled = true;
+            currentAnimalClean = null;
+            clearSaveError();
+            return;
+          }
+
+          if (data.error) {
+            // Si falla por configuración (keys faltantes), mostramos mensaje técnico.
+            const errMsg = String(data.error);
+            if (errMsg.toLowerCase().includes("credenciales")) {
+              setSearchSuccess(false);
+              if (habitatResultsSection) habitatResultsSection.classList.add("hidden");
+              if (imageSkeleton) imageSkeleton.classList.add("hidden");
+              if (taxGrid) taxGrid.classList.add("hidden");
+              if (saveArea) saveArea.classList.add("hidden");
+              if (noResultsState) noResultsState.classList.add("hidden");
+              animalCard.classList.add("hidden");
+              if (riskBanner) riskBanner.classList.add("hidden");
+              showStatus(errMsg);
+              return;
+            }
+
+            setSearchSuccess(false);
+            if (habitatResultsSection) habitatResultsSection.classList.add("hidden");
+            if (imageSkeleton) imageSkeleton.classList.add("hidden");
+            if (taxGrid) taxGrid.classList.add("hidden");
+            if (saveArea) saveArea.classList.add("hidden");
+            if (noResultsState) noResultsState.classList.remove("hidden");
+            if (riskBanner) riskBanner.classList.add("hidden");
+            resultImage.src = "";
+            resultImage.classList.add("opacity-0");
+            resultImage.classList.remove("opacity-100");
+            resultName.textContent = "—";
+            resultScientificName.textContent = "—";
+            return;
+          }
+
+          if (!data.scientific_name && data.ninjas_error) {
+            setSearchSuccess(false);
+            if (habitatResultsSection) habitatResultsSection.classList.add("hidden");
+            if (imageSkeleton) imageSkeleton.classList.add("hidden");
+            if (taxGrid) taxGrid.classList.add("hidden");
+            if (saveArea) saveArea.classList.add("hidden");
+            if (noResultsState) noResultsState.classList.remove("hidden");
+            if (riskBanner) riskBanner.classList.add("hidden");
+            resultImage.src = "";
+            resultImage.classList.add("opacity-0");
+            resultImage.classList.remove("opacity-100");
+            resultName.textContent = "—";
+            resultScientificName.textContent = "—";
+            return;
+          }
+
+          renderCardFromAnimal(data);
+          setSearchSuccess(true);
+          applySearchResultToState(data);
+        } catch (err) {
+          setSearchSuccess(false);
+          if (habitatResultsSection) habitatResultsSection.classList.add("hidden");
+          if (imageSkeleton) imageSkeleton.classList.add("hidden");
+          if (taxGrid) taxGrid.classList.add("hidden");
+          if (saveArea) saveArea.classList.add("hidden");
+          if (noResultsState) noResultsState.classList.add("hidden");
+          if (riskBanner) riskBanner.classList.add("hidden");
+
+          if (err && err.status && err.status >= 500) {
+            showStatus("Estamos teniendo problemas técnicos, intenta más tarde.");
+          } else {
+            showStatus("Ocurrió un error al buscar. Verifica que tu backend esté funcionando en el puerto 8000.");
+          }
+          console.error(err);
+        } finally {
+          setSearchLoading(false);
+        }
+      }
+
+      async function saveToFavorites() {
+        hideStatus();
+        clearSaveError();
+
+        if (!currentAnimalClean) {
+          if (habitatResultsSection && !habitatResultsSection.classList.contains("hidden")) {
+            setSaveError("Elige una especie del listado de hábitat (toca una tarjeta) antes de guardar.");
+          } else {
+            setSaveError("Primero busca un animal.");
+          }
+          return;
+        }
+
+        btnSave.disabled = true;
+
+        try {
+          const resp = await fetch(`${API_BASE}/favorites`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(currentAnimalClean),
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            const err = new Error(text || `HTTP ${resp.status}`);
+            err.status = resp.status;
+            throw err;
+          }
+
+          await loadFavorites();
+          btnSave.disabled = false;
+          showToast("¡Guardado con éxito!");
+        } catch (err) {
+          btnSave.disabled = false;
+          if (err && err.status && err.status >= 500) {
+            setSaveError("Estamos teniendo problemas técnicos, intenta más tarde.");
+          } else {
+            setSaveError("No se pudo guardar en favoritos. Intenta de nuevo.");
+          }
+          console.error(err);
+        }
+      }
+
+      async function deleteFavorite(id) {
+        hideStatus();
+
+        const ok = window.confirm("¿Estás seguro de que quieres eliminar este ejemplar de tu colección?");
+        if (!ok) return;
+
+        try {
+          const resp = await fetch(`${API_BASE}/favorites/${id}`, {
+            method: "DELETE",
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(text || `HTTP ${resp.status}`);
+          }
+
+          // Actualiza la galería tras eliminar.
+          await loadFavorites();
+        } catch (err) {
+          showStatus("No se pudo eliminar el favorito. Intenta de nuevo.");
+          console.error(err);
+        }
+      }
+
+      async function loadFavorites() {
+        favoritesLoading.classList.remove("hidden");
+        favoritesGrid.innerHTML = "";
+
+        // Pequeña animación de carga al entrar.
+        progressBar.style.width = "0%";
+        progressBar.classList.add("animate-pulse");
+
+        let hadError = false;
+        try {
+          const resp = await fetch(`${API_BASE}/favorites`);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+          const data = await resp.json();
+
+          const favorites = Array.isArray(data) ? data : [];
+          updateProgressBar(favorites.length);
+
+          if (favorites.length === 0) {
+            favoritesGrid.innerHTML =
+              "<div class='col-span-1 sm:col-span-2 lg:col-span-3 rounded-2xl bg-white border border-emerald-100 p-4 text-sm dark:bg-slate-900 dark:border-emerald-500/30 dark:text-slate-50'>Aún no tienes avistamientos en la bitácora.</div>";
+            return;
+          }
+
+          favoritesGrid.innerHTML = "";
+
+          favorites.forEach((item) => {
+            const card = document.createElement("div");
+            card.className =
+              "relative cursor-pointer overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/30 dark:bg-slate-900";
+            card.setAttribute("role", "button");
+            card.tabIndex = 0;
+            card.setAttribute("aria-label", `Ver ficha de ${item.name || "animal"}`);
+            card.addEventListener("click", () => openSightingModal(item));
+            card.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openSightingModal(item);
+              }
+            });
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.setAttribute("aria-label", "Eliminar avistamiento");
+            deleteBtn.title = "Eliminar";
+            deleteBtn.className =
+              "absolute top-2 right-2 z-10 rounded-full bg-red-600 px-2 py-1 text-white shadow-sm hover:bg-red-700 active:bg-red-800";
+            deleteBtn.textContent = "🗑️";
+            deleteBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              deleteFavorite(item.id);
+            });
+
+            const imgWrap = document.createElement("div");
+            imgWrap.className = "h-28 w-full overflow-hidden";
+
+            const imgEl = document.createElement("img");
+            imgEl.src = normalizeImageSrc(item.image_url);
+            imgEl.alt = item.name ? `Imagen de ${item.name}` : "Imagen del favorito";
+            imgEl.className = "h-28 w-full object-cover opacity-0 transition-opacity duration-500";
+
+            imgEl.addEventListener("load", () => {
+              imgEl.classList.remove("opacity-0");
+              imgEl.classList.add("opacity-100");
+            });
+            imgEl.addEventListener("error", () => {
+              imgEl.src = imagePlaceholder;
+            });
+            imgWrap.appendChild(imgEl);
+
+            const body = document.createElement("div");
+            body.className = "p-3";
+
+            const nameDiv = document.createElement("div");
+            nameDiv.className = "font-bold text-slate-800 dark:text-slate-50";
+            nameDiv.textContent = item.name || "Nombre";
+
+            const sciDiv = document.createElement("div");
+            sciDiv.className = "mt-1 text-xs italic text-slate-500 dark:text-slate-400";
+            sciDiv.textContent = item.scientific_name ? item.scientific_name : "";
+
+            const dateDiv = document.createElement("div");
+            dateDiv.className = "mt-1 text-[11px] font-light text-slate-500 dark:text-slate-400";
+            if (item.timestamp) {
+              try {
+                const d = new Date(item.timestamp);
+                dateDiv.textContent = `Avistado: ${d.toLocaleDateString("es-ES", { dateStyle: "medium" })}`;
+              } catch (e) {
+                dateDiv.textContent = "";
+              }
+            }
+
+            const habDiv = document.createElement("div");
+            habDiv.className = "mt-1 line-clamp-2 text-[11px] text-slate-600 dark:text-slate-400";
+            if (item.habitat && String(item.habitat).trim()) {
+              const hs = document.createElement("strong");
+              hs.textContent = "Hábitat: ";
+              habDiv.appendChild(hs);
+              habDiv.appendChild(
+                document.createTextNode(translatePhraseWithKnownTokens(String(item.habitat).trim()))
+              );
+            } else {
+              habDiv.className += " italic text-slate-400 dark:text-slate-500";
+              habDiv.textContent = "Sin hábitat guardado";
+            }
+
+            const consDiv = document.createElement("div");
+            consDiv.className = "mt-1 line-clamp-2 text-[11px] text-amber-800/90 dark:text-amber-200/80";
+            const cons = formatConservationDisplay(item.conservation_status);
+            if (cons) {
+              const cs = document.createElement("strong");
+              cs.textContent = "Conservación: ";
+              consDiv.appendChild(cs);
+              consDiv.appendChild(document.createTextNode(cons));
+            } else {
+              consDiv.classList.add("hidden");
+            }
+
+            body.appendChild(nameDiv);
+            body.appendChild(sciDiv);
+            body.appendChild(habDiv);
+            if (!consDiv.classList.contains("hidden")) body.appendChild(consDiv);
+            body.appendChild(dateDiv);
+
+            card.appendChild(deleteBtn);
+            card.appendChild(imgWrap);
+            card.appendChild(body);
+
+            favoritesGrid.appendChild(card);
+          });
+        } catch (err) {
+          hadError = true;
+          favoritesLoading.textContent = "Error al cargar favoritos.";
+          console.error(err);
+          updateProgressBar(0);
+        } finally {
+          if (!hadError) favoritesLoading.classList.add("hidden");
+        }
+      }
+
+      function onSearchClick() {
+        fetchAnimal();
+      }
+      function onSaveClick() {
+        saveToFavorites();
+      }
+
+      let quizAnswerIndex = null;
+
+      async function loadQuiz() {
+        hideStatus();
+        try {
+          const resp = await fetch(`${API_BASE}/quiz`);
+          if (resp.status === 400) {
+            let msg = "Necesitas al menos 3 avistamientos en la bitácora para jugar.";
+            try {
+              const j = await resp.json();
+              if (j.detail) msg = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+            } catch (e) {}
+            showStatus(msg);
+            quizPanel.classList.add("hidden");
+            return;
+          }
+          if (!resp.ok) {
+            const err = new Error(`HTTP ${resp.status}`);
+            err.status = resp.status;
+            throw err;
+          }
+          const data = await resp.json();
+          quizAnswerIndex = data.correct_index;
+          quizQuestion.textContent = data.question || "";
+          quizOptions.innerHTML = "";
+          (data.options || []).forEach((opt, i) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.textContent = opt;
+            b.setAttribute("aria-label", `Responder: ${opt}`);
+            b.className =
+              "rounded-xl border border-emerald-200 bg-white px-4 py-2 text-left text-sm font-medium text-slate-800 hover:bg-emerald-50 dark:border-emerald-500/30 dark:bg-slate-900 dark:text-slate-50 dark:hover:bg-slate-800";
+            b.addEventListener("click", () => {
+              if (i === quizAnswerIndex) showToast("¡Correcto!");
+              else showToast("Casi: revisa la bitácora e inténtalo de nuevo.");
+            });
+            quizOptions.appendChild(b);
+          });
+          quizPanel.classList.remove("hidden");
+        } catch (err) {
+          if (err && err.status && err.status >= 500) {
+            showStatus("Estamos teniendo problemas técnicos, intenta más tarde.");
+          } else {
+            showStatus("No se pudo cargar el trivia. Verifica el servidor.");
+          }
+          console.error(err);
+        }
+      }
+
+      btnQuizStart.addEventListener("click", loadQuiz);
+
+      btnSearch.addEventListener("click", onSearchClick);
+      elSearchName.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") onSearchClick();
+      });
+      elSearchName.addEventListener("input", () => {
+        setSearchInputInvalid(false);
+        setSearchSuccess(false);
+      });
+      btnSave.addEventListener("click", onSaveClick);
+
+      loadFavorites();
+    </script>
+  </body>
+</html>
+
