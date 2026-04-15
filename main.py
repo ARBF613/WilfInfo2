@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import os
 import random
 import re
@@ -7,11 +8,11 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import Column, DateTime, Integer, JSON, String, create_engine
+from sqlalchemy import Column, DateTime, Integer, JSON, String, UniqueConstraint, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 app = FastAPI()
@@ -42,6 +43,19 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
+BADGE_CATALOG: List[Dict[str, str]] = [
+    {"badge_code": "bioma_trofeo", "label": "León Dorado: maestro del bioma"},
+    {"badge_code": "aguila_andina", "label": "Águila Andina: vista de explorador"},
+    {"badge_code": "tiburon_profundo", "label": "Tiburón de Profundidad: leyenda oceánica"},
+    {"badge_code": "zorro_desierto", "label": "Zorro del Desierto: sigilo total"},
+    {"badge_code": "jaguar_selva", "label": "Jaguar de Selva: cazador nocturno"},
+    {"badge_code": "lobo_alpha", "label": "Lobo Alfa: líder de manada"},
+    {"badge_code": "oso_guardian", "label": "Oso Guardián: fuerza de la montaña"},
+    {"badge_code": "delfin_inteligente", "label": "Delfín Inteligente: mente marina"},
+    {"badge_code": "buho_sabio", "label": "Búho Sabio: estratega de trivia"},
+    {"badge_code": "elefante_ancestral", "label": "Elefante Ancestral: memoria de fauna"},
+]
+
 
 class Sighting(Base):
     """Avistamiento guardado en la bitácora (antes FavoriteAnimal)."""
@@ -49,6 +63,7 @@ class Sighting(Base):
     __tablename__ = "sightings"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False, index=True, default="guest")
     name = Column(String, nullable=False)
     scientific_name = Column(String, nullable=False)
     image_url = Column(String, nullable=False)
@@ -60,6 +75,32 @@ class Sighting(Base):
     taxonomy = Column(JSON, nullable=True)
     characteristics = Column(JSON, nullable=True)
     locations_json = Column(JSON, nullable=True)
+
+
+class UserBadge(Base):
+    """Insignias desbloqueadas por usuario."""
+
+    __tablename__ = "user_badges"
+    __table_args__ = (UniqueConstraint("user_id", "badge_code", name="uq_user_badge_code"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False, index=True)
+    badge_code = Column(String, nullable=False, index=True)
+    label = Column(String, nullable=False)
+    unlocked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class UserProfile(Base):
+    """Perfil simple de usuario para asociar progreso."""
+
+    __tablename__ = "user_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False, unique=True, index=True)
+    display_name = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False, default="")
+    role = Column(String, nullable=False, default="user")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 def init_db() -> None:
@@ -83,6 +124,7 @@ def migrate_sightings_json_columns() -> None:
         cur.execute("PRAGMA table_info(sightings)")
         cols = {row[1] for row in cur.fetchall()}
         for stmt in (
+            "ALTER TABLE sightings ADD COLUMN user_id TEXT NOT NULL DEFAULT 'guest'",
             "ALTER TABLE sightings ADD COLUMN taxonomy TEXT",
             "ALTER TABLE sightings ADD COLUMN characteristics TEXT",
             "ALTER TABLE sightings ADD COLUMN locations_json TEXT",
@@ -91,6 +133,75 @@ def migrate_sightings_json_columns() -> None:
             if col not in cols:
                 cur.execute(stmt)
                 cols.add(col)
+        if "user_id" in cols:
+            cur.execute("UPDATE sightings SET user_id='guest' WHERE user_id IS NULL OR TRIM(user_id)=''")
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def migrate_user_profiles_columns() -> None:
+    """Añade columnas de autenticación a user_profiles en bases ya existentes."""
+    import sqlite3
+
+    if not os.path.isfile(DATABASE_PATH):
+        return
+    conn = sqlite3.connect(DATABASE_PATH)
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='user_profiles'"
+        )
+        if not cur.fetchone():
+            return
+        cur.execute("PRAGMA table_info(user_profiles)")
+        cols = {row[1] for row in cur.fetchall()}
+        stmts = (
+            "ALTER TABLE user_profiles ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE user_profiles ADD COLUMN role TEXT NOT NULL DEFAULT 'user'",
+        )
+        for stmt in stmts:
+            col = stmt.split("ADD COLUMN ")[1].split(" ")[0]
+            if col not in cols:
+                cur.execute(stmt)
+                cols.add(col)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def migrate_user_cleanup_triggers() -> None:
+    """
+    Crea triggers SQLite para borrar en cascada datos por usuario.
+    Así evitamos registros huérfanos aunque cambie la lógica de API.
+    """
+    import sqlite3
+
+    if not os.path.isfile(DATABASE_PATH):
+        return
+    conn = sqlite3.connect(DATABASE_PATH)
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS trg_user_profiles_delete_badges
+            AFTER DELETE ON user_profiles
+            FOR EACH ROW
+            BEGIN
+                DELETE FROM user_badges WHERE user_id = OLD.username;
+            END;
+            """
+        )
+        cur.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS trg_user_profiles_delete_sightings
+            AFTER DELETE ON user_profiles
+            FOR EACH ROW
+            BEGIN
+                DELETE FROM sightings WHERE user_id = OLD.username;
+            END;
+            """
+        )
         conn.commit()
     finally:
         conn.close()
@@ -106,6 +217,10 @@ def load_env_on_startup() -> None:
     UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY", "")
     init_db()
     migrate_sightings_json_columns()
+    migrate_user_profiles_columns()
+    migrate_user_cleanup_triggers()
+    _ensure_default_admin()
+    _cleanup_orphan_user_data()
 
 
 @app.get("/")
@@ -1442,12 +1557,262 @@ class SightingCreate(BaseModel):
         return str(v).strip()
 
 
+class SightingUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    name: Optional[str] = None
+    scientific_name: Optional[str] = None
+    image_url: Optional[str] = None
+    habitat: Optional[str] = None
+    conservation_status: Optional[str] = None
+    fun_fact: Optional[str] = None
+    taxonomy: Optional[Any] = None
+    characteristics: Optional[Any] = None
+    locations: Optional[Any] = None
+
+
+class BadgeCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    user_id: str = Field(min_length=1, default="default_user")
+    badge_code: str = Field(min_length=1, default="bioma_trofeo")
+    label: str = Field(min_length=1, default="León Dorado: maestro del bioma")
+
+    @field_validator("user_id", "badge_code", "label", mode="before")
+    @classmethod
+    def strip_non_empty(cls, v: Any) -> str:
+        if v is None:
+            raise ValueError("El valor no puede ser vacío.")
+        s = str(v).strip()
+        if not s:
+            raise ValueError("El valor no puede ser vacío.")
+        return s
+
+
+class LoginPayload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=4)
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def clean_username(cls, v: Any) -> str:
+        if v is None:
+            raise ValueError("El usuario no puede estar vacío.")
+        raw = str(v).strip().lower()
+        cleaned = re.sub(r"[^a-z0-9_\-\.]", "", raw)
+        if len(cleaned) < 3:
+            raise ValueError("Usa al menos 3 caracteres válidos (a-z, 0-9, _, -, .).")
+        return cleaned[:40]
+
+    @field_validator("password", mode="before")
+    @classmethod
+    def clean_password(cls, v: Any) -> str:
+        if v is None:
+            raise ValueError("La contraseña no puede estar vacía.")
+        s = str(v).strip()
+        if len(s) < 4:
+            raise ValueError("La contraseña debe tener al menos 4 caracteres.")
+        return s
+
+
+class RegisterPayload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=4)
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def clean_username(cls, v: Any) -> str:
+        if v is None:
+            raise ValueError("El usuario no puede estar vacío.")
+        raw = str(v).strip().lower()
+        cleaned = re.sub(r"[^a-z0-9_\-\.]", "", raw)
+        if len(cleaned) < 3:
+            raise ValueError("Usa al menos 3 caracteres válidos (a-z, 0-9, _, -, .).")
+        return cleaned[:40]
+
+    @field_validator("password", mode="before")
+    @classmethod
+    def clean_password(cls, v: Any) -> str:
+        if v is None:
+            raise ValueError("La contraseña no puede estar vacía.")
+        s = str(v).strip()
+        if len(s) < 4:
+            raise ValueError("La contraseña debe tener al menos 4 caracteres.")
+        return s
+
+def _hash_password(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+class AdminUserCreatePayload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=4)
+    role: str = Field(default="user")
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def clean_username(cls, v: Any) -> str:
+        if v is None:
+            raise ValueError("El usuario no puede estar vacío.")
+        raw = str(v).strip().lower()
+        cleaned = re.sub(r"[^a-z0-9_\-\.]", "", raw)
+        if len(cleaned) < 3:
+            raise ValueError("Usa al menos 3 caracteres válidos (a-z, 0-9, _, -, .).")
+        return cleaned[:40]
+
+    @field_validator("password", mode="before")
+    @classmethod
+    def clean_password(cls, v: Any) -> str:
+        if v is None:
+            raise ValueError("La contraseña no puede estar vacía.")
+        s = str(v).strip()
+        if len(s) < 4:
+            raise ValueError("La contraseña debe tener al menos 4 caracteres.")
+        return s
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def clean_role(cls, v: Any) -> str:
+        return "admin" if str(v or "user").strip().lower() == "admin" else "user"
+
+
+class AdminUserUpdatePayload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    password: Optional[str] = None
+    role: Optional[str] = None
+
+    @field_validator("password", mode="before")
+    @classmethod
+    def clean_password(cls, v: Any) -> Optional[str]:
+        if v is None:
+            return None
+        s = str(v).strip()
+        if not s:
+            return None
+        if len(s) < 4:
+            raise ValueError("La contraseña debe tener al menos 4 caracteres.")
+        return s
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def clean_role(cls, v: Any) -> Optional[str]:
+        if v is None:
+            return None
+        raw = str(v).strip().lower()
+        if not raw:
+            return None
+        return "admin" if raw == "admin" else "user"
+
+
+def _ensure_default_admin() -> None:
+    """Crea el admin por defecto si no existe."""
+    session = SessionLocal()
+    try:
+        existing = (
+            session.query(UserProfile)
+            .filter(UserProfile.username == "admin1")
+            .first()
+        )
+        if existing is None:
+            row = UserProfile(
+                username="admin1",
+                display_name="admin1",
+                password_hash=_hash_password("yoadmin1"),
+                role="admin",
+                created_at=datetime.utcnow(),
+            )
+            session.add(row)
+            session.commit()
+            return
+
+        changed = False
+        if (existing.role or "").strip().lower() != "admin":
+            existing.role = "admin"
+            changed = True
+        if not (existing.password_hash or "").strip():
+            existing.password_hash = _hash_password("yoadmin1")
+            changed = True
+        if changed:
+            session.add(existing)
+            session.commit()
+    finally:
+        session.close()
+
+
+def _cleanup_orphan_user_data() -> None:
+    """
+    Limpia datos huérfanos que queden de usuarios eliminados.
+    Conserva `guest` por sesiones anónimas.
+    """
+    session = SessionLocal()
+    try:
+        valid_users = {
+            str(u).strip().lower()
+            for (u,) in session.query(UserProfile.username).all()
+            if u is not None and str(u).strip()
+        }
+        valid_users.add("guest")
+
+        for row in session.query(UserBadge).all():
+            uid = str(row.user_id or "").strip().lower()
+            if uid not in valid_users:
+                session.delete(row)
+
+        for row in session.query(Sighting).all():
+            uid = str(row.user_id or "").strip().lower()
+            if uid not in valid_users:
+                session.delete(row)
+
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def _require_admin_user(x_user_id: Optional[str]) -> UserProfile:
+    uid = str(x_user_id or "").strip().lower()
+    if not uid:
+        raise HTTPException(status_code=401, detail="Falta cabecera X-User-Id.")
+    session = SessionLocal()
+    try:
+        user = (
+            session.query(UserProfile)
+            .filter(UserProfile.username == uid)
+            .first()
+        )
+        if user is None:
+            raise HTTPException(status_code=401, detail="Usuario no autenticado.")
+        if (user.role or "").strip().lower() != "admin":
+            raise HTTPException(status_code=403, detail="Acceso solo para administradores.")
+        # Se devuelve una copia simple para no depender de sesión abierta.
+        return UserProfile(
+            username=user.username,
+            display_name=user.display_name,
+            password_hash=user.password_hash,
+            role=user.role,
+            created_at=user.created_at,
+        )
+    finally:
+        session.close()
+
+
 @app.post("/favorites")
-def save_sighting(payload: SightingCreate):
+def save_sighting(payload: SightingCreate, x_user_id: Optional[str] = Header(default=None)):
     """Registra un avistamiento en SQLite (ruta /favorites por compatibilidad con el frontend)."""
+    uid = str(x_user_id or "guest").strip().lower() or "guest"
     session = SessionLocal()
     try:
         row = Sighting(
+            user_id=uid,
             name=payload.name,
             scientific_name=payload.scientific_name,
             image_url=payload.image_url,
@@ -1471,14 +1836,21 @@ def save_sighting(payload: SightingCreate):
 
 
 @app.get("/favorites")
-def list_sightings():
+def list_sightings(x_user_id: Optional[str] = Header(default=None)):
     """Lista todos los avistamientos de la bitácora."""
+    uid = str(x_user_id or "guest").strip().lower() or "guest"
     session = SessionLocal()
     try:
-        rows: List[Sighting] = session.query(Sighting).order_by(Sighting.timestamp.desc()).all()
+        rows: List[Sighting] = (
+            session.query(Sighting)
+            .filter(Sighting.user_id == uid)
+            .order_by(Sighting.timestamp.desc())
+            .all()
+        )
         return [
             {
                 "id": r.id,
+                "user_id": r.user_id,
                 "name": r.name,
                 "scientific_name": r.scientific_name,
                 "image_url": r.image_url,
@@ -1497,11 +1869,16 @@ def list_sightings():
 
 
 @app.delete("/favorites/{id}")
-def delete_sighting(id: int):
+def delete_sighting(id: int, x_user_id: Optional[str] = Header(default=None)):
     """Elimina un avistamiento por id."""
+    uid = str(x_user_id or "guest").strip().lower() or "guest"
     session = SessionLocal()
     try:
-        row = session.query(Sighting).filter(Sighting.id == id).first()
+        row = (
+            session.query(Sighting)
+            .filter(Sighting.id == id, Sighting.user_id == uid)
+            .first()
+        )
         if row is None:
             raise HTTPException(status_code=404, detail="Avistamiento no encontrado.")
 
@@ -1515,6 +1892,373 @@ def delete_sighting(id: int):
         raise HTTPException(status_code=500, detail=f"Error eliminando avistamiento: {exc}")
     finally:
         session.close()
+
+
+@app.get("/admin/users")
+def admin_list_users(x_user_id: Optional[str] = Header(default=None)):
+    """Listado administrativo de usuarios (solo admin)."""
+    _require_admin_user(x_user_id)
+    session = SessionLocal()
+    try:
+        rows: List[UserProfile] = (
+            session.query(UserProfile).order_by(UserProfile.created_at.desc()).all()
+        )
+        return [
+            {
+                "id": r.id,
+                "username": r.username,
+                "display_name": r.display_name,
+                "role": (r.role or "user"),
+                "created_at": r.created_at.isoformat() + "Z" if r.created_at else None,
+            }
+            for r in rows
+        ]
+    finally:
+        session.close()
+
+
+@app.post("/admin/users")
+def admin_create_user(
+    payload: AdminUserCreatePayload, x_user_id: Optional[str] = Header(default=None)
+):
+    """Crea usuario desde panel admin."""
+    _require_admin_user(x_user_id)
+    session = SessionLocal()
+    try:
+        existing = (
+            session.query(UserProfile)
+            .filter(UserProfile.username == payload.username)
+            .first()
+        )
+        if existing is not None:
+            raise HTTPException(status_code=409, detail="El usuario ya existe.")
+        row = UserProfile(
+            username=payload.username,
+            display_name=payload.username,
+            password_hash=_hash_password(payload.password),
+            role=payload.role,
+            created_at=datetime.utcnow(),
+        )
+        session.add(row)
+        session.commit()
+        session.refresh(row)
+        return {"status": "created", "username": row.username}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creando usuario: {exc}")
+    finally:
+        session.close()
+
+
+@app.put("/admin/users/{username}")
+def admin_update_user(
+    username: str, payload: AdminUserUpdatePayload, x_user_id: Optional[str] = Header(default=None)
+):
+    """Actualiza usuario desde panel admin (solo admin)."""
+    current_admin = _require_admin_user(x_user_id)
+    target = str(username or "").strip().lower()
+    if not target:
+        raise HTTPException(status_code=400, detail="Usuario objetivo inválido.")
+    session = SessionLocal()
+    try:
+        row = session.query(UserProfile).filter(UserProfile.username == target).first()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        if payload.password is not None:
+            row.password_hash = _hash_password(payload.password)
+        if payload.role is not None:
+            if row.username == current_admin.username and payload.role != "admin":
+                raise HTTPException(
+                    status_code=400,
+                    detail="No puedes quitarte a ti mismo el rol admin.",
+                )
+            row.role = payload.role
+
+        session.add(row)
+        session.commit()
+        return {"status": "updated", "username": row.username}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error actualizando usuario: {exc}")
+    finally:
+        session.close()
+
+
+@app.delete("/admin/users/{username}")
+def admin_delete_user(username: str, x_user_id: Optional[str] = Header(default=None)):
+    """Elimina usuario desde panel admin (solo admin)."""
+    current_admin = _require_admin_user(x_user_id)
+    target = str(username or "").strip().lower()
+    if not target:
+        raise HTTPException(status_code=400, detail="Usuario objetivo inválido.")
+    if target == "admin1":
+        raise HTTPException(status_code=400, detail="No se puede eliminar el admin principal.")
+    if target == current_admin.username:
+        raise HTTPException(status_code=400, detail="No puedes eliminar tu propio usuario admin.")
+    session = SessionLocal()
+    try:
+        row = session.query(UserProfile).filter(UserProfile.username == target).first()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+        # Limpieza completa: también borra datos dependientes del usuario.
+        badges_deleted = (
+            session.query(UserBadge)
+            .filter(UserBadge.user_id == target)
+            .delete(synchronize_session=False)
+        )
+        sightings_deleted = (
+            session.query(Sighting)
+            .filter(Sighting.user_id == target)
+            .delete(synchronize_session=False)
+        )
+        session.delete(row)
+        session.commit()
+        return {
+            "status": "deleted",
+            "username": target,
+            "deleted_badges": int(badges_deleted),
+            "deleted_sightings": int(sightings_deleted),
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error eliminando usuario: {exc}")
+    finally:
+        session.close()
+
+
+@app.post("/badges")
+def save_badge(payload: BadgeCreate):
+    """Guarda una insignia asociada al usuario si aún no existe."""
+    session = SessionLocal()
+    try:
+        existing = (
+            session.query(UserBadge)
+            .filter(
+                UserBadge.user_id == payload.user_id,
+                UserBadge.badge_code == payload.badge_code,
+            )
+            .first()
+        )
+        if existing is not None:
+            return {
+                "status": "exists",
+                "badge": {
+                    "id": existing.id,
+                    "user_id": existing.user_id,
+                    "badge_code": existing.badge_code,
+                    "label": existing.label,
+                    "unlocked_at": existing.unlocked_at.isoformat() + "Z",
+                },
+            }
+
+        row = UserBadge(
+            user_id=payload.user_id,
+            badge_code=payload.badge_code,
+            label=payload.label,
+            unlocked_at=datetime.utcnow(),
+        )
+        session.add(row)
+        session.commit()
+        session.refresh(row)
+        return {
+            "status": "saved",
+            "badge": {
+                "id": row.id,
+                "user_id": row.user_id,
+                "badge_code": row.badge_code,
+                "label": row.label,
+                "unlocked_at": row.unlocked_at.isoformat() + "Z",
+            },
+        }
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error guardando insignia: {exc}")
+    finally:
+        session.close()
+
+
+@app.get("/badges/user/{user_id}")
+def list_badges_by_user(user_id: str):
+    """Lista insignias desbloqueadas por un usuario."""
+    uid = user_id.strip()
+    if not uid:
+        raise HTTPException(status_code=400, detail="El usuario no puede estar vacío.")
+    session = SessionLocal()
+    try:
+        rows: List[UserBadge] = (
+            session.query(UserBadge)
+            .filter(UserBadge.user_id == uid)
+            .order_by(UserBadge.unlocked_at.desc())
+            .all()
+        )
+        return [
+            {
+                "id": r.id,
+                "user_id": r.user_id,
+                "badge_code": r.badge_code,
+                "label": r.label,
+                "unlocked_at": r.unlocked_at.isoformat() + "Z" if r.unlocked_at else None,
+            }
+            for r in rows
+        ]
+    finally:
+        session.close()
+
+
+@app.get("/badges/catalog")
+def list_badge_catalog():
+    """Catálogo global de trofeos disponibles."""
+    return BADGE_CATALOG
+
+
+@app.get("/badges/overview")
+def badges_overview():
+    """
+    Resumen de trofeos:
+    - catálogo total
+    - para cada usuario: ganados y faltantes
+    """
+    session = SessionLocal()
+    try:
+        rows: List[UserBadge] = session.query(UserBadge).all()
+        profiles: List[UserProfile] = session.query(UserProfile).all()
+        by_user: Dict[str, Dict[str, Any]] = {}
+        for r in rows:
+            uid = str(r.user_id).strip() or "default_user"
+            entry = by_user.setdefault(
+                uid,
+                {"user_id": uid, "earned_codes": set(), "earned": []},
+            )
+            if r.badge_code in entry["earned_codes"]:
+                continue
+            entry["earned_codes"].add(r.badge_code)
+            entry["earned"].append(
+                {
+                    "badge_code": r.badge_code,
+                    "label": r.label,
+                    "unlocked_at": r.unlocked_at.isoformat() + "Z" if r.unlocked_at else None,
+                }
+            )
+
+        role_map: Dict[str, str] = {}
+        for p in profiles:
+            uid = str(p.username).strip()
+            if not uid:
+                continue
+            by_user.setdefault(uid, {"user_id": uid, "earned_codes": set(), "earned": []})
+            role_map[uid] = (str(p.role or "user").strip().lower() or "user")
+
+        users_payload: List[Dict[str, Any]] = []
+        for uid, entry in by_user.items():
+            earned_codes = entry["earned_codes"]
+            missing = [b for b in BADGE_CATALOG if b["badge_code"] not in earned_codes]
+            users_payload.append(
+                {
+                    "user_id": uid,
+                    "role": role_map.get(uid, "user"),
+                    "earned": entry["earned"],
+                    "missing": missing,
+                    "earned_count": len(entry["earned"]),
+                    "missing_count": len(missing),
+                }
+            )
+
+        users_payload.sort(key=lambda x: (-x["earned_count"], x["user_id"]))
+        return {"catalog": BADGE_CATALOG, "users": users_payload}
+    finally:
+        session.close()
+
+
+@app.post("/auth/register")
+def auth_register(payload: RegisterPayload):
+    """Registro de usuario con rol y contraseña."""
+    session = SessionLocal()
+    try:
+        existing = (
+            session.query(UserProfile)
+            .filter(UserProfile.username == payload.username)
+            .first()
+        )
+        if existing is not None:
+            raise HTTPException(status_code=409, detail="El usuario ya existe.")
+
+        row = UserProfile(
+            username=payload.username,
+            display_name=payload.username,
+            password_hash=_hash_password(payload.password),
+            role="user",
+            created_at=datetime.utcnow(),
+        )
+        session.add(row)
+        session.commit()
+        session.refresh(row)
+        return {
+            "status": "created",
+            "user": {
+                "username": row.username,
+                "display_name": row.display_name,
+                "role": row.role,
+                "created_at": row.created_at.isoformat() + "Z",
+            },
+        }
+    except Exception as exc:
+        if isinstance(exc, HTTPException):
+            raise
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error en registro: {exc}")
+    finally:
+        session.close()
+
+
+@app.post("/auth/login")
+def auth_login(payload: LoginPayload):
+    """Login por usuario y contraseña."""
+    session = SessionLocal()
+    try:
+        existing = (
+            session.query(UserProfile)
+            .filter(UserProfile.username == payload.username)
+            .first()
+        )
+        if existing is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+        incoming_hash = _hash_password(payload.password)
+        stored_hash = (existing.password_hash or "").strip()
+        if not stored_hash:
+            # Migración suave: si el usuario viene del esquema anterior sin contraseña,
+            # la primera contraseña usada en login queda establecida.
+            existing.password_hash = incoming_hash
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
+        elif stored_hash != incoming_hash:
+            raise HTTPException(status_code=401, detail="Contraseña incorrecta.")
+
+        return {
+            "status": "ok",
+            "user": {
+                "username": existing.username,
+                "display_name": existing.display_name,
+                "role": existing.role or "user",
+                "created_at": existing.created_at.isoformat() + "Z",
+            },
+        }
+    finally:
+        session.close()
+
+
+@app.post("/auth/logout")
+def auth_logout():
+    """Logout local (stateless)."""
+    return {"status": "ok"}
 
 
 def _tax_pick(row: Sighting, *keys: str) -> Optional[str]:

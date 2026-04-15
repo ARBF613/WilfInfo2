@@ -77,6 +77,76 @@
         aria-live="polite"
       ></div>
 
+      <!-- Login simple -->
+      <section class="mb-6 rounded-2xl border border-emerald-200 bg-white/80 p-4 shadow-sm dark:border-emerald-500/30 dark:bg-slate-900/70">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-end">
+          <div class="flex-1">
+            <label for="loginUsername" class="block text-sm font-semibold text-slate-800 dark:text-slate-200">Usuario</label>
+            <input
+              id="loginUsername"
+              type="text"
+              autocomplete="off"
+              placeholder="Ej. jefer123"
+              class="mt-1 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:border-emerald-500/30 dark:bg-slate-950/50 dark:text-slate-100"
+            />
+          </div>
+          <div>
+            <label for="loginPassword" class="block text-sm font-semibold text-slate-800 dark:text-slate-200">Contraseña</label>
+            <input
+              id="loginPassword"
+              type="password"
+              autocomplete="current-password"
+              placeholder="••••"
+              class="mt-1 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:border-emerald-500/30 dark:bg-slate-950/50 dark:text-slate-100"
+            />
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnLogin" type="button" class="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800">
+              Iniciar sesión
+            </button>
+            <button id="btnRegister" type="button" class="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-800">
+              Registrarse
+            </button>
+            <button id="btnLogout" type="button" class="rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800">
+              Logout
+            </button>
+          </div>
+        </div>
+        <p id="loginStatus" class="mt-2 text-xs text-slate-600 dark:text-slate-300">Sesión: invitado</p>
+      </section>
+
+      <!-- Panel de administración -->
+      <section id="adminPanel" class="mb-8 hidden rounded-2xl border border-rose-200 bg-white/85 p-4 shadow-sm dark:border-rose-500/30 dark:bg-slate-900/70">
+        <h2 class="text-xl font-extrabold text-rose-900 dark:text-rose-200">Panel de administración</h2>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Aquí puedes agregar, modificar y borrar usuarios.
+        </p>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label for="adminUserName" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Usuario</label>
+            <input id="adminUserName" type="text" class="mt-1 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm dark:border-rose-500/30 dark:bg-slate-950/50 dark:text-slate-100" />
+          </div>
+          <div>
+            <label for="adminUserPassword" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Contraseña</label>
+            <input id="adminUserPassword" type="password" class="mt-1 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm dark:border-rose-500/30 dark:bg-slate-950/50 dark:text-slate-100" />
+          </div>
+          <div>
+            <label for="adminUserRole" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Rol</label>
+            <select id="adminUserRole" class="mt-1 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm dark:border-rose-500/30 dark:bg-slate-950/50 dark:text-slate-100">
+              <option value="user">Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="btnAdminCreateUser" type="button" class="rounded-xl bg-rose-700 px-4 py-2 text-sm font-bold text-white hover:bg-rose-800">Agregar usuario</button>
+          <button id="btnAdminRefresh" type="button" class="rounded-xl bg-slate-700 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800">Refrescar</button>
+        </div>
+        <p id="adminStatus" class="mt-2 text-xs text-slate-600 dark:text-slate-300"></p>
+        <div id="adminUsersList" class="mt-3 space-y-2"></div>
+      </section>
+
       <!-- Hero / Bienvenida -->
       <section
         class="mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-800 to-teal-900 p-8 text-white shadow-xl ring-1 ring-white/10 transition-colors duration-500 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950 dark:ring-emerald-500/20"
@@ -399,6 +469,80 @@
           <div id="quizOptions" class="mt-4 flex flex-col gap-2"></div>
         </div>
       </section>
+
+      <!-- Desafío Bioma -->
+      <section
+        class="mt-10 rounded-3xl bg-white/80 p-5 shadow-sm backdrop-blur transition-colors duration-500 dark:bg-slate-900/70 dark:border dark:border-emerald-500/20"
+        aria-labelledby="biomeChallengeHeading"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="biomeChallengeHeading" class="text-2xl font-extrabold text-emerald-900 dark:text-emerald-200">
+            Desafío Bioma
+          </h2>
+          <button
+            id="btnBiomeNew"
+            type="button"
+            class="rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-teal-800"
+          >
+            Nuevo desafío
+          </button>
+        </div>
+
+        <p class="mt-2 text-sm font-light text-slate-600 dark:text-slate-300">
+          Arrastra el animal a su bioma correcto. Si aciertas, desbloqueas un trofeo dorado en tu perfil.
+        </p>
+        <div id="biomeStatus" class="mt-3 hidden rounded-xl border px-3 py-2 text-sm"></div>
+
+        <div
+          id="biomeAnimalCard"
+          draggable="true"
+          class="mt-4 hidden cursor-grab rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 shadow-sm active:cursor-grabbing dark:border-emerald-500/30 dark:bg-slate-900/60"
+        >
+          <img id="biomeAnimalImage" src="" alt="Animal del desafío" class="h-44 w-full rounded-xl object-cover" />
+          <div id="biomeAnimalName" class="mt-2 text-center text-base font-bold text-slate-800 dark:text-slate-50"></div>
+          <div id="biomeCurrentBadge" class="mt-2 rounded-xl border border-yellow-300/80 bg-yellow-50/70 px-3 py-2 text-center text-xs font-semibold text-yellow-900 dark:border-yellow-500/40 dark:bg-yellow-900/20 dark:text-yellow-100">
+            Trofeo en juego: —
+          </div>
+          <div class="mt-1 text-center text-[11px] text-slate-500 dark:text-slate-400">Arrastra esta tarjeta a una zona</div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div data-biome="forest" class="biome-dropzone rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/60 p-4 text-center dark:border-emerald-500/40 dark:bg-slate-900/50">
+            <div class="text-2xl">🌲</div>
+            <div class="mt-1 font-bold text-emerald-900 dark:text-emerald-200">Bosque</div>
+          </div>
+          <div data-biome="desert" class="biome-dropzone rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-4 text-center dark:border-amber-500/40 dark:bg-slate-900/50">
+            <div class="text-2xl">🏜️</div>
+            <div class="mt-1 font-bold text-amber-900 dark:text-amber-200">Desierto</div>
+          </div>
+          <div data-biome="ocean" class="biome-dropzone rounded-2xl border-2 border-dashed border-sky-300 bg-sky-50/60 p-4 text-center dark:border-sky-500/40 dark:bg-slate-900/50">
+            <div class="text-2xl">🌊</div>
+            <div class="mt-1 font-bold text-sky-900 dark:text-sky-200">Océano</div>
+          </div>
+        </div>
+
+        <div id="biomeBadgePanel" class="mt-4 rounded-2xl border border-yellow-300/80 bg-yellow-50/80 p-3 text-sm dark:border-yellow-500/40 dark:bg-yellow-900/20">
+          <div class="flex items-center gap-2">
+            <span id="biomeBadgeIcon" class="text-2xl grayscale opacity-60">🏆</span>
+            <div>
+              <div class="font-bold text-yellow-900 dark:text-yellow-100">Insignia de perfil</div>
+              <div id="biomeBadgeText" class="text-yellow-900/80 dark:text-yellow-100/90">Trofeo bloqueado. Gana un Desafío Bioma para desbloquearlo.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div class="rounded-2xl border border-emerald-200 bg-white/80 p-3 dark:border-emerald-500/30 dark:bg-slate-900/60">
+            <h3 class="text-sm font-extrabold text-emerald-900 dark:text-emerald-200">Tus trofeos (perfil)</h3>
+            <div id="myTrophiesEarned" class="mt-2 text-sm text-slate-700 dark:text-slate-200">Cargando...</div>
+            <div id="myTrophiesMissing" class="mt-2 text-xs text-slate-600 dark:text-slate-300"></div>
+          </div>
+          <div class="rounded-2xl border border-sky-200 bg-white/80 p-3 dark:border-sky-500/30 dark:bg-slate-900/60">
+            <h3 class="text-sm font-extrabold text-sky-900 dark:text-sky-200">Trofeos ganados por usuarios</h3>
+            <div id="usersTrophiesBoard" class="mt-2 text-sm text-slate-700 dark:text-slate-200">Cargando...</div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- Modal ficha enciclopedia (bitácora) -->
@@ -429,6 +573,20 @@
     <script>
       const API_BASE = "http://localhost:8000";
       const elSearchName = document.getElementById("searchName");
+      const loginUsername = document.getElementById("loginUsername");
+      const loginPassword = document.getElementById("loginPassword");
+      const btnLogin = document.getElementById("btnLogin");
+      const btnRegister = document.getElementById("btnRegister");
+      const btnLogout = document.getElementById("btnLogout");
+      const loginStatus = document.getElementById("loginStatus");
+      const adminPanel = document.getElementById("adminPanel");
+      const adminUserName = document.getElementById("adminUserName");
+      const adminUserPassword = document.getElementById("adminUserPassword");
+      const adminUserRole = document.getElementById("adminUserRole");
+      const btnAdminCreateUser = document.getElementById("btnAdminCreateUser");
+      const btnAdminRefresh = document.getElementById("btnAdminRefresh");
+      const adminStatus = document.getElementById("adminStatus");
+      const adminUsersList = document.getElementById("adminUsersList");
       const btnSearch = document.getElementById("btnSearch");
       const btnSave = document.getElementById("btnSave");
       const btnSearchLabel = document.getElementById("btnSearchLabel");
@@ -472,12 +630,34 @@
       const quizPanel = document.getElementById("quizPanel");
       const quizQuestion = document.getElementById("quizQuestion");
       const quizOptions = document.getElementById("quizOptions");
+      const btnBiomeNew = document.getElementById("btnBiomeNew");
+      const biomeStatus = document.getElementById("biomeStatus");
+      const biomeAnimalCard = document.getElementById("biomeAnimalCard");
+      const biomeAnimalImage = document.getElementById("biomeAnimalImage");
+      const biomeAnimalName = document.getElementById("biomeAnimalName");
+      const biomeCurrentBadge = document.getElementById("biomeCurrentBadge");
+      const biomeDropzones = Array.from(document.querySelectorAll(".biome-dropzone"));
+      const biomeBadgeIcon = document.getElementById("biomeBadgeIcon");
+      const biomeBadgeText = document.getElementById("biomeBadgeText");
+      const myTrophiesEarned = document.getElementById("myTrophiesEarned");
+      const myTrophiesMissing = document.getElementById("myTrophiesMissing");
+      const usersTrophiesBoard = document.getElementById("usersTrophiesBoard");
 
       const sightingModal = document.getElementById("sightingModal");
       const sightingModalBody = document.getElementById("sightingModalBody");
       const sightingModalClose = document.getElementById("sightingModalClose");
 
       let currentAnimalClean = null; // Datos "limpios" listos para POST /favorites
+      let biomeChallengeAnimal = null;
+      let badgeUnlocked = false;
+      let currentChallengeBadge = null;
+      let earnedBadgeCodes = new Set();
+      let currentUserId = "guest";
+      let currentUserRole = "user";
+      const DEFAULT_BIOME_BADGE = {
+        badge_code: "bioma_trofeo",
+        label: "León Dorado: maestro del bioma",
+      };
 
       const imagePlaceholder =
         "data:image/svg+xml;charset=utf-8," +
@@ -501,6 +681,11 @@
       function hideStatus() {
         statusMessage.classList.add("hidden");
         statusText.textContent = "";
+      }
+
+      function getCurrentUserIdForApi() {
+        const uid = String(currentUserId || "").trim().toLowerCase();
+        return uid || "guest";
       }
 
       function setSaveError(text) {
@@ -1209,6 +1394,553 @@
         progressBar.classList.remove("animate-pulse");
       }
 
+      function setBiomeStatus(text, kind = "info") {
+        if (!biomeStatus) return;
+        biomeStatus.textContent = text;
+        biomeStatus.classList.remove("hidden");
+        biomeStatus.className = "mt-3 rounded-xl border px-3 py-2 text-sm";
+        if (kind === "success") {
+          biomeStatus.classList.add(
+            "border-emerald-300",
+            "bg-emerald-50",
+            "text-emerald-900",
+            "dark:border-emerald-500/40",
+            "dark:bg-emerald-900/20",
+            "dark:text-emerald-100"
+          );
+        } else if (kind === "error") {
+          biomeStatus.classList.add(
+            "border-red-300",
+            "bg-red-50",
+            "text-red-900",
+            "dark:border-red-500/40",
+            "dark:bg-red-900/20",
+            "dark:text-red-100"
+          );
+        } else {
+          biomeStatus.classList.add(
+            "border-slate-300",
+            "bg-white",
+            "text-slate-700",
+            "dark:border-slate-600",
+            "dark:bg-slate-800/60",
+            "dark:text-slate-200"
+          );
+        }
+      }
+
+      function setBadgeUI(unlocked, badgeLabel) {
+        badgeUnlocked = !!unlocked;
+        if (!biomeBadgeIcon || !biomeBadgeText) return;
+        const label = badgeLabel || (currentChallengeBadge ? currentChallengeBadge.label : DEFAULT_BIOME_BADGE.label);
+        if (biomeCurrentBadge) biomeCurrentBadge.textContent = `Trofeo en juego: ${label}`;
+        if (badgeUnlocked) {
+          biomeBadgeIcon.classList.remove("grayscale", "opacity-60");
+          biomeBadgeText.textContent = `${label} desbloqueado en tu perfil.`;
+        } else {
+          biomeBadgeIcon.classList.add("grayscale", "opacity-60");
+          biomeBadgeText.textContent = `Trofeo bloqueado: ${label}. Gana un Desafío Bioma para desbloquearlo.`;
+        }
+      }
+
+      function resolveChallengeBadge(animal) {
+        if (!animal) return { ...DEFAULT_BIOME_BADGE };
+        const name = String(animal.name || "").toLowerCase();
+        const habitat = String(animal.habitat || "").toLowerCase();
+        const blob = `${name} ${habitat}`;
+
+        const rules = [
+          { test: /(lion)/, badge_code: "bioma_trofeo", label: "León Dorado: maestro del bioma" },
+          { test: /(eagle|aguila|hawk|condor)/, badge_code: "aguila_andina", label: "Águila Andina: vista de explorador" },
+          { test: /(shark|tiburon|orca|whale|dolphin|octopus|ray)/, badge_code: "tiburon_profundo", label: "Tiburón de Profundidad: leyenda oceánica" },
+          { test: /(fox|fennec|desert)/, badge_code: "zorro_desierto", label: "Zorro del Desierto: sigilo total" },
+          { test: /(jaguar|panther|leopard|tiger)/, badge_code: "jaguar_selva", label: "Jaguar de Selva: cazador nocturno" },
+          { test: /(wolf|lobo)/, badge_code: "lobo_alpha", label: "Lobo Alfa: líder de manada" },
+          { test: /(bear|oso)/, badge_code: "oso_guardian", label: "Oso Guardián: fuerza de la montaña" },
+          { test: /(dolphin|delfin)/, badge_code: "delfin_inteligente", label: "Delfín Inteligente: mente marina" },
+          { test: /(owl|buho)/, badge_code: "buho_sabio", label: "Búho Sabio: estratega de trivia" },
+          { test: /(elephant|elefante)/, badge_code: "elefante_ancestral", label: "Elefante Ancestral: memoria de fauna" },
+        ];
+
+        for (const r of rules) {
+          if (r.test.test(blob)) return { badge_code: r.badge_code, label: r.label };
+        }
+        return { ...DEFAULT_BIOME_BADGE };
+      }
+
+      function setLoginStatus(text, isError = false) {
+        if (!loginStatus) return;
+        loginStatus.textContent = text;
+        loginStatus.classList.remove("text-red-700", "dark:text-red-300", "text-slate-600", "dark:text-slate-300");
+        if (isError) loginStatus.classList.add("text-red-700", "dark:text-red-300");
+        else loginStatus.classList.add("text-slate-600", "dark:text-slate-300");
+      }
+
+      function applyCurrentUserToUI() {
+        if (loginUsername) loginUsername.value = currentUserId === "guest" ? "" : currentUserId;
+        if (loginPassword) loginPassword.value = "";
+        setLoginStatus(`Sesión: ${currentUserId} (${currentUserRole})`);
+        const isAdmin = currentUserRole === "admin";
+        if (adminPanel) adminPanel.classList.toggle("hidden", !isAdmin);
+      }
+
+      function setAdminStatus(text, isError = false) {
+        if (!adminStatus) return;
+        adminStatus.textContent = text;
+        adminStatus.classList.remove("text-red-700", "dark:text-red-300", "text-slate-600", "dark:text-slate-300");
+        if (isError) adminStatus.classList.add("text-red-700", "dark:text-red-300");
+        else adminStatus.classList.add("text-slate-600", "dark:text-slate-300");
+      }
+
+      async function fetchAdminUsers() {
+        if (currentUserRole !== "admin" || !adminUsersList) return;
+        try {
+          const resp = await fetch(`${API_BASE}/admin/users`, {
+            headers: { "X-User-Id": currentUserId },
+          });
+          const data = await resp.json().catch(() => []);
+          if (!resp.ok) throw new Error(data?.detail || `HTTP ${resp.status}`);
+          const list = Array.isArray(data) ? data : [];
+          if (!list.length) {
+            adminUsersList.innerHTML =
+              "<div class='rounded-xl border border-rose-100 bg-rose-50/50 p-2 text-sm dark:border-rose-500/20 dark:bg-slate-800/50'>No hay usuarios para administrar.</div>";
+            return;
+          }
+          adminUsersList.innerHTML = "";
+          list.forEach((item) => {
+            const row = document.createElement("div");
+            row.className =
+              "rounded-xl border border-rose-100 bg-rose-50/40 p-2 text-xs dark:border-rose-500/20 dark:bg-slate-800/50";
+            row.innerHTML = `
+              <div><strong>${item.username || ""}</strong> <span class="opacity-80">(${item.role || "user"})</span></div>
+              <div class="mt-1">Creado: ${item.created_at ? new Date(item.created_at).toLocaleString("es-ES") : "—"}</div>
+            `;
+            const actions = document.createElement("div");
+            actions.className = "mt-2 flex flex-wrap gap-2";
+            const btnEdit = document.createElement("button");
+            btnEdit.type = "button";
+            btnEdit.className = "rounded-lg bg-amber-600 px-2 py-1 text-white";
+            btnEdit.textContent = "Editar";
+            btnEdit.addEventListener("click", () => adminUpdateUserPrompt(item));
+            const btnDelete = document.createElement("button");
+            btnDelete.type = "button";
+            btnDelete.className = "rounded-lg bg-red-600 px-2 py-1 text-white";
+            btnDelete.textContent = "Borrar";
+            btnDelete.addEventListener("click", () => adminDeleteUser(item.username));
+            actions.appendChild(btnEdit);
+            actions.appendChild(btnDelete);
+            row.appendChild(actions);
+            adminUsersList.appendChild(row);
+          });
+        } catch (err) {
+          console.error(err);
+          setAdminStatus("No se pudo cargar la lista administrativa.", true);
+        }
+      }
+
+      async function adminCreateUser() {
+        const payload = {
+          username: adminUserName ? adminUserName.value.trim().toLowerCase() : "",
+          password: adminUserPassword ? adminUserPassword.value.trim() : "",
+          role: adminUserRole ? adminUserRole.value : "user",
+        };
+        if (!payload.username || !payload.password) {
+          setAdminStatus("Completa usuario y contraseña.", true);
+          return;
+        }
+        try {
+          const resp = await fetch(`${API_BASE}/admin/users`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+            body: JSON.stringify(payload),
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw new Error(data?.detail || `HTTP ${resp.status}`);
+          setAdminStatus("Usuario agregado.");
+          if (adminUserName) adminUserName.value = "";
+          if (adminUserPassword) adminUserPassword.value = "";
+          if (adminUserRole) adminUserRole.value = "user";
+          await fetchAdminUsers();
+        } catch (err) {
+          console.error(err);
+          setAdminStatus("No se pudo agregar el usuario.", true);
+        }
+      }
+
+      async function adminUpdateUserPrompt(item) {
+        const newRole = window.prompt("Nuevo rol (admin/user):", item.role || "user");
+        if (newRole === null) return;
+        const newPassword = window.prompt("Nueva contraseña (dejar vacía para no cambiar):", "");
+        if (newPassword === null) return;
+        const payload = {};
+        if (String(newRole).trim()) payload.role = String(newRole).trim().toLowerCase();
+        if (String(newPassword).trim()) payload.password = String(newPassword).trim();
+        try {
+          const resp = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(item.username)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+            body: JSON.stringify(payload),
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw new Error(data?.detail || `HTTP ${resp.status}`);
+          setAdminStatus("Usuario actualizado.");
+          await fetchAdminUsers();
+        } catch (err) {
+          console.error(err);
+          setAdminStatus("No se pudo actualizar el usuario.", true);
+        }
+      }
+
+      async function adminDeleteUser(username) {
+        const ok = window.confirm(`¿Borrar el usuario "${username}"?`);
+        if (!ok) return;
+        try {
+          const resp = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(username)}`, {
+            method: "DELETE",
+            headers: { "X-User-Id": currentUserId },
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw new Error(data?.detail || `HTTP ${resp.status}`);
+          setAdminStatus("Usuario eliminado.");
+          await fetchAdminUsers();
+        } catch (err) {
+          console.error(err);
+          setAdminStatus("No se pudo eliminar el usuario.", true);
+        }
+      }
+
+      async function loginUser(usernameRaw, passwordRaw) {
+        const candidate = String(usernameRaw || "").trim().toLowerCase();
+        const pass = String(passwordRaw || "").trim();
+        if (!candidate) {
+          setLoginStatus("Escribe un usuario para iniciar sesión.", true);
+          return;
+        }
+        if (pass.length < 4) {
+          setLoginStatus("La contraseña debe tener al menos 4 caracteres.", true);
+          return;
+        }
+        try {
+          const resp = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: candidate, password: pass }),
+          });
+          const payload = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            const msg = payload?.detail || `HTTP ${resp.status}`;
+            throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+          }
+
+          const u = payload?.user?.username || candidate;
+          const role = payload?.user?.role || "user";
+          currentUserId = String(u);
+          currentUserRole = String(role);
+          try {
+            localStorage.setItem("wildinfo_user", currentUserId);
+            localStorage.setItem("wildinfo_role", currentUserRole);
+          } catch (e) {}
+          applyCurrentUserToUI();
+          showToast(`Sesión iniciada como ${currentUserId}`);
+          await Promise.all([loadFavorites(), loadBiomeBadge(), loadBadgesOverview()]);
+          if (currentUserRole === "admin") await fetchAdminUsers();
+        } catch (err) {
+          console.error(err);
+          setLoginStatus("No se pudo iniciar sesión. Revisa el nombre de usuario.", true);
+        }
+      }
+
+      async function registerUser(usernameRaw, passwordRaw) {
+        const candidate = String(usernameRaw || "").trim().toLowerCase();
+        const pass = String(passwordRaw || "").trim();
+        if (!candidate) {
+          setLoginStatus("Escribe un usuario para registrarte.", true);
+          return;
+        }
+        if (pass.length < 4) {
+          setLoginStatus("La contraseña debe tener al menos 4 caracteres.", true);
+          return;
+        }
+        try {
+          const resp = await fetch(`${API_BASE}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: candidate, password: pass }),
+          });
+          const payload = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            const msg = payload?.detail || `HTTP ${resp.status}`;
+            throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+          }
+          showToast(`Usuario ${candidate} registrado`);
+          await loginUser(candidate, pass);
+        } catch (err) {
+          console.error(err);
+          setLoginStatus("No se pudo registrar. Si ya existe, inicia sesión.", true);
+        }
+      }
+
+      async function logoutUser() {
+        try {
+          await fetch(`${API_BASE}/auth/logout`, { method: "POST" });
+        } catch (e) {}
+        currentUserId = "guest";
+        currentUserRole = "user";
+        try {
+          localStorage.removeItem("wildinfo_user");
+          localStorage.removeItem("wildinfo_role");
+        } catch (e) {}
+        applyCurrentUserToUI();
+        setBadgeUI(false);
+        if (adminUsersList) adminUsersList.innerHTML = "";
+        await Promise.all([loadFavorites(), loadBadgesOverview()]);
+        showToast("Sesión cerrada");
+      }
+
+      function normalizeBiomeFromHabitat(rawHabitat) {
+        if (!rawHabitat) return null;
+        const t = String(rawHabitat).toLowerCase();
+        if (/(ocean|sea|marine|coastal|reef|pelagic|saltwater)/.test(t)) return "ocean";
+        if (/(desert|arid|dune)/.test(t)) return "desert";
+        if (/(forest|woodland|woods|jungle|rainforest)/.test(t)) return "forest";
+        return null;
+      }
+
+      async function loadBiomeBadge() {
+        try {
+          const resp = await fetch(`${API_BASE}/badges/user/${encodeURIComponent(currentUserId)}`);
+          if (!resp.ok) return;
+          const data = await resp.json();
+          const badges = Array.isArray(data) ? data : [];
+          earnedBadgeCodes = new Set(
+            badges
+              .map((b) => (b && b.badge_code ? String(b.badge_code) : ""))
+              .filter((x) => !!x)
+          );
+          const targetCode = currentChallengeBadge
+            ? currentChallengeBadge.badge_code
+            : DEFAULT_BIOME_BADGE.badge_code;
+          const targetLabel = currentChallengeBadge
+            ? currentChallengeBadge.label
+            : DEFAULT_BIOME_BADGE.label;
+          setBadgeUI(earnedBadgeCodes.has(targetCode), targetLabel);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function renderTrophiesOverview(payload) {
+        const users = Array.isArray(payload?.users) ? payload.users : [];
+        const mine = users.find((u) => u.user_id === currentUserId);
+        const catalog = Array.isArray(payload?.catalog) ? payload.catalog : [];
+
+        if (myTrophiesEarned) {
+          if (!mine || !Array.isArray(mine.earned) || mine.earned.length === 0) {
+            myTrophiesEarned.textContent = "Aún no has ganado trofeos.";
+          } else {
+            myTrophiesEarned.innerHTML = mine.earned
+              .map((b) => `🏆 ${b.label}`)
+              .join("<br/>");
+          }
+        }
+
+        if (myTrophiesMissing) {
+          const missingFromMine =
+            mine && Array.isArray(mine.missing)
+              ? mine.missing
+              : catalog.filter(
+                  (c) => !(mine?.earned || []).some((b) => b.badge_code === c.badge_code)
+                );
+          if (!missingFromMine.length) {
+            myTrophiesMissing.textContent = "¡Completaste todos los trofeos del catálogo!";
+          } else {
+            myTrophiesMissing.textContent = `Te faltan: ${missingFromMine
+              .map((b) => b.label)
+              .join(" | ")}`;
+          }
+        }
+
+        if (usersTrophiesBoard) {
+          if (!users.length) {
+            usersTrophiesBoard.textContent = "Todavía no hay usuarios con trofeos desbloqueados.";
+          } else {
+            usersTrophiesBoard.innerHTML = users
+              .map((u) => {
+                const earned = Array.isArray(u.earned) ? u.earned.map((b) => b.label).join(", ") : "";
+                const roleLabel = u.role === "admin" ? "Admin" : "Usuario";
+                return `<div class="mb-2 rounded-xl border border-sky-100 bg-sky-50/50 px-2 py-1 dark:border-sky-500/20 dark:bg-slate-800/50"><strong>${u.user_id}</strong> <span class="text-xs opacity-80">(${roleLabel})</span>: ${u.earned_count} ganados / ${u.missing_count} pendientes${earned ? `<br/><span class="text-xs">${earned}</span>` : ""}</div>`;
+              })
+              .join("");
+          }
+        }
+      }
+
+      async function loadBadgesOverview() {
+        try {
+          const resp = await fetch(`${API_BASE}/badges/overview`);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const data = await resp.json();
+          renderTrophiesOverview(data);
+        } catch (err) {
+          console.error(err);
+          if (myTrophiesEarned) myTrophiesEarned.textContent = "No se pudo cargar tu resumen de trofeos.";
+          if (myTrophiesMissing) myTrophiesMissing.textContent = "";
+          if (usersTrophiesBoard) usersTrophiesBoard.textContent = "No se pudo cargar el tablero de usuarios.";
+        }
+      }
+
+      async function unlockBiomeBadge(badge) {
+        const target = badge || currentChallengeBadge || DEFAULT_BIOME_BADGE;
+        try {
+          const resp = await fetch(`${API_BASE}/badges`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: currentUserId,
+              badge_code: target.badge_code,
+              label: target.label,
+            }),
+          });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          earnedBadgeCodes.add(target.badge_code);
+          setBadgeUI(true, target.label);
+          await loadBadgesOverview();
+        } catch (err) {
+          console.error(err);
+          setBiomeStatus("Ganaste, pero no se pudo guardar la insignia en servidor.", "error");
+        }
+      }
+
+      function randomBiomeSeed() {
+        const seeds = [
+          "lion",
+          "wolf",
+          "deer",
+          "camel",
+          "fennec fox",
+          "rattlesnake",
+          "shark",
+          "dolphin",
+          "octopus",
+          "whale",
+        ];
+        return seeds[Math.floor(Math.random() * seeds.length)];
+      }
+
+      async function loadBiomeChallengeAnimal() {
+        if (!biomeAnimalCard || !biomeAnimalImage || !biomeAnimalName) return;
+        biomeChallengeAnimal = null;
+        biomeAnimalCard.classList.add("hidden");
+        setBiomeStatus("Cargando desafío...", "info");
+
+        let candidate = null;
+        for (let i = 0; i < 8; i++) {
+          const query = randomBiomeSeed();
+          try {
+            const resp = await fetch(`${API_BASE}/animal/${encodeURIComponent(query)}`);
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            if (!data || data.search_mode === "habitat_many") continue;
+            const h = getHabitatFromCharacteristicsData(data) || getHabitatFromLocations(data.locations);
+            const expectedBiome = normalizeBiomeFromHabitat(h);
+            if (!expectedBiome) continue;
+            candidate = {
+              name: data.name || query,
+              image_url: data.image_url || imagePlaceholder,
+              habitat: h || "",
+              biome: expectedBiome,
+            };
+            break;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        if (!candidate) {
+          setBiomeStatus(
+            "No pudimos cargar un animal con bioma claro ahora mismo. Intenta de nuevo.",
+            "error"
+          );
+          return;
+        }
+
+        biomeChallengeAnimal = candidate;
+        currentChallengeBadge = resolveChallengeBadge(candidate);
+        biomeAnimalImage.src = normalizeImageSrc(candidate.image_url);
+        biomeAnimalName.textContent = candidate.name;
+        biomeAnimalCard.classList.remove("hidden");
+        setBadgeUI(
+          earnedBadgeCodes.has(currentChallengeBadge.badge_code),
+          currentChallengeBadge.label
+        );
+        setBiomeStatus("Arrastra la tarjeta al bioma correcto.", "info");
+      }
+
+      function clearDropzoneHighlight() {
+        biomeDropzones.forEach((z) => {
+          z.classList.remove("ring-2", "ring-emerald-500", "ring-amber-500", "ring-sky-500");
+        });
+      }
+
+      async function onBiomeDrop(targetBiome) {
+        if (!biomeChallengeAnimal) return;
+        if (targetBiome === biomeChallengeAnimal.biome) {
+          const targetBadge = currentChallengeBadge || resolveChallengeBadge(biomeChallengeAnimal);
+          setBiomeStatus(
+            `¡Correcto! ${biomeChallengeAnimal.name} coincide con su hábitat (${translatePhraseWithKnownTokens(
+              biomeChallengeAnimal.habitat
+            )}).`,
+            "success"
+          );
+          showToast("¡Desafío superado!");
+          if (!earnedBadgeCodes.has(targetBadge.badge_code)) await unlockBiomeBadge(targetBadge);
+          else setBadgeUI(true, targetBadge.label);
+        } else {
+          setBiomeStatus(
+            `No coincide. Este animal encaja mejor en ${
+              biomeChallengeAnimal.biome === "forest"
+                ? "Bosque"
+                : biomeChallengeAnimal.biome === "desert"
+                  ? "Desierto"
+                  : "Océano"
+            }.`,
+            "error"
+          );
+        }
+      }
+
+      function bindBiomeDragAndDrop() {
+        if (!biomeAnimalCard) return;
+        biomeAnimalCard.addEventListener("dragstart", (e) => {
+          if (!biomeChallengeAnimal) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.setData("text/plain", biomeChallengeAnimal.name || "animal");
+          e.dataTransfer.effectAllowed = "move";
+        });
+
+        biomeDropzones.forEach((zone) => {
+          zone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            zone.classList.add("ring-2");
+            const biome = zone.getAttribute("data-biome");
+            if (biome === "forest") zone.classList.add("ring-emerald-500");
+            else if (biome === "desert") zone.classList.add("ring-amber-500");
+            else zone.classList.add("ring-sky-500");
+          });
+          zone.addEventListener("dragleave", () => {
+            clearDropzoneHighlight();
+          });
+          zone.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            clearDropzoneHighlight();
+            const biome = zone.getAttribute("data-biome");
+            await onBiomeDrop(biome);
+          });
+        });
+      }
+
       async function fetchAnimal() {
         hideStatus();
         clearSaveError();
@@ -1383,7 +2115,7 @@
         try {
           const resp = await fetch(`${API_BASE}/favorites`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-User-Id": getCurrentUserIdForApi() },
             body: JSON.stringify(currentAnimalClean),
           });
 
@@ -1417,6 +2149,7 @@
         try {
           const resp = await fetch(`${API_BASE}/favorites/${id}`, {
             method: "DELETE",
+            headers: { "X-User-Id": getCurrentUserIdForApi() },
           });
 
           if (!resp.ok) {
@@ -1442,7 +2175,9 @@
 
         let hadError = false;
         try {
-          const resp = await fetch(`${API_BASE}/favorites`);
+          const resp = await fetch(`${API_BASE}/favorites`, {
+            headers: { "X-User-Id": getCurrentUserIdForApi() },
+          });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
           const data = await resp.json();
@@ -1629,6 +2364,34 @@
       }
 
       btnQuizStart.addEventListener("click", loadQuiz);
+      if (btnBiomeNew) btnBiomeNew.addEventListener("click", loadBiomeChallengeAnimal);
+      if (btnLogin) {
+        btnLogin.addEventListener("click", () =>
+          loginUser(loginUsername ? loginUsername.value : "", loginPassword ? loginPassword.value : "")
+        );
+      }
+      if (btnRegister) {
+        btnRegister.addEventListener("click", () =>
+          registerUser(loginUsername ? loginUsername.value : "", loginPassword ? loginPassword.value : "")
+        );
+      }
+      if (btnLogout) {
+        btnLogout.addEventListener("click", logoutUser);
+      }
+      if (btnAdminCreateUser) btnAdminCreateUser.addEventListener("click", adminCreateUser);
+      if (btnAdminRefresh) btnAdminRefresh.addEventListener("click", fetchAdminUsers);
+      if (loginUsername) {
+        loginUsername.addEventListener("keydown", (e) => {
+          if (e.key === "Enter")
+            loginUser(loginUsername.value, loginPassword ? loginPassword.value : "");
+        });
+      }
+      if (loginPassword) {
+        loginPassword.addEventListener("keydown", (e) => {
+          if (e.key === "Enter")
+            loginUser(loginUsername ? loginUsername.value : "", loginPassword.value);
+        });
+      }
 
       btnSearch.addEventListener("click", onSearchClick);
       elSearchName.addEventListener("keydown", (e) => {
@@ -1640,7 +2403,19 @@
       });
       btnSave.addEventListener("click", onSaveClick);
 
+      try {
+        const stored = localStorage.getItem("wildinfo_user");
+        if (stored && String(stored).trim()) currentUserId = String(stored).trim().toLowerCase();
+        const storedRole = localStorage.getItem("wildinfo_role");
+        if (storedRole && String(storedRole).trim()) currentUserRole = String(storedRole).trim().toLowerCase();
+      } catch (e) {}
+      applyCurrentUserToUI();
       loadFavorites();
+      bindBiomeDragAndDrop();
+      loadBiomeBadge();
+      loadBadgesOverview();
+      loadBiomeChallengeAnimal();
+      if (currentUserRole === "admin") fetchAdminUsers();
     </script>
   </body>
 </html>
