@@ -11,16 +11,34 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import Column, DateTime, Integer, JSON, String, UniqueConstraint, create_engine
+from sqlalchemy import Column, DateTime, Integer, JSON, String, UniqueConstraint, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+# Carga variables desde `.env` en raíz del proyecto.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
+FRONTEND_INDEX_PATH = os.path.join(FRONTEND_DIR, "index.html")
+DOTENV_PATH = os.path.join(PROJECT_ROOT, ".env")
+load_dotenv(dotenv_path=DOTENV_PATH)
+
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))
+ORIGEN_PERMITIDO = os.getenv("ORIGEN_PERMITIDO", "http://127.0.0.1:5500")
+NINJAS_API_URL = os.getenv("NINJAS_API_URL", "https://api.api-ninjas.com/v1/animals")
+UNSPLASH_API_URL = os.getenv("UNSPLASH_API_URL", "https://api.unsplash.com/search/photos")
+
 app = FastAPI()
+
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
 
 # Permite que tu Frontend (futuro) consuma la API sin bloqueos CORS.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[ORIGEN_PERMITIDO],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,7 +49,7 @@ NINJAS_API_KEY: str = ""
 UNSPLASH_ACCESS_KEY: str = ""
 
 # --- Persistencia SQLite (SQLAlchemy) ---
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), "wildinfo2.db")
+DATABASE_PATH = os.path.join(BASE_DIR, "wildinfo2.db")
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 # `check_same_thread=False` ayuda con SQLite cuando Uvicorn usa threads.
@@ -210,10 +228,10 @@ def migrate_user_cleanup_triggers() -> None:
 @app.on_event("startup")
 def load_env_on_startup() -> None:
     # Lee el archivo .env en la raíz del proyecto (si existe).
-    dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-    load_dotenv(dotenv_path=dotenv_path)
+    load_dotenv(dotenv_path=DOTENV_PATH)
     global NINJAS_API_KEY, UNSPLASH_ACCESS_KEY
-    NINJAS_API_KEY = os.getenv("NINJAS_API_KEY", "")
+    # Acepta NINJA_API_KEY (requerimiento práctica) y fallback legado NINJAS_API_KEY.
+    NINJAS_API_KEY = os.getenv("NINJA_API_KEY", "") or os.getenv("NINJAS_API_KEY", "")
     UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY", "")
     init_db()
     migrate_sightings_json_columns()
@@ -226,7 +244,9 @@ def load_env_on_startup() -> None:
 @app.get("/")
 def root():
     """Entrega la SPA `index.html` en la ruta principal."""
-    return FileResponse("index.html", media_type="text/html")
+    if not os.path.isfile(FRONTEND_INDEX_PATH):
+        raise HTTPException(status_code=404, detail="No se encontró frontend/index.html")
+    return FileResponse(FRONTEND_INDEX_PATH, media_type="text/html")
 
 
 @app.get("/status")
@@ -235,6 +255,24 @@ def status():
     return {
         "status": "Servidor Arriba",
         "message": "Bienvenido a la API de WildInfo",
+    }
+
+
+@app.get("/config")
+def config_check():
+    """Verifica carga de variables de entorno y conexión DB."""
+    db_connected = False
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        db_connected = True
+    except Exception:
+        db_connected = False
+
+    return {
+        "status": "Running in Staging",
+        "port": PORT,
+        "db_connected": db_connected,
     }
 
 
@@ -1195,8 +1233,8 @@ async def _fetch_ninjas_by_name(
 ) -> tuple[Optional[str], Any]:
     """Llama a API Ninjas con ?name=... Devuelve (error, json o None)."""
     if not NINJAS_API_KEY:
-        return "Falta configurar 'NINJAS_API_KEY' en el archivo .env.", None
-    url = "https://api.api-ninjas.com/v1/animals"
+        return "Falta configurar 'NINJA_API_KEY' en el archivo .env.", None
+    url = NINJAS_API_URL
     headers = {"X-Api-Key": NINJAS_API_KEY}
     params = {"name": name_param}
     try:
@@ -1222,7 +1260,7 @@ async def _unsplash_search_first_url(
     q = query.strip()
     if not q:
         return None
-    url = "https://api.unsplash.com/search/photos"
+    url = UNSPLASH_API_URL
     headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
     params = {"query": q, "per_page": 1}
     try:
@@ -1365,7 +1403,7 @@ async def get_animal(name: str):
 
     if not NINJAS_API_KEY and not UNSPLASH_ACCESS_KEY:
         response["error"] = (
-            "Faltan credenciales. Completa 'NINJAS_API_KEY' y 'UNSPLASH_ACCESS_KEY' en el archivo .env."
+            "Faltan credenciales. Completa 'NINJA_API_KEY' y 'UNSPLASH_ACCESS_KEY' en el archivo .env."
         )
         return response
 
@@ -1443,7 +1481,7 @@ async def get_animal(name: str):
                         unsplash_error = "Falta configurar 'UNSPLASH_ACCESS_KEY' en el archivo .env."
                         return
 
-                    url = "https://api.unsplash.com/search/photos"
+                    url = UNSPLASH_API_URL
                     headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
                     params = {"query": image_query, "per_page": 1}
                     try:

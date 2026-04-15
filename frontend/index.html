@@ -571,7 +571,7 @@
     </div>
 
     <script>
-      const API_BASE = "http://localhost:8000";
+      const API_BASE = window.location.port === "8000" ? window.location.origin : "http://localhost:8000";
       const elSearchName = document.getElementById("searchName");
       const loginUsername = document.getElementById("loginUsername");
       const loginPassword = document.getElementById("loginPassword");
