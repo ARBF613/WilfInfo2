@@ -21,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
 FRONTEND_INDEX_PATH = os.path.join(FRONTEND_DIR, "index.html")
-DOTENV_PATH = os.path.join(PROJECT_ROOT, ".env")
+DOTENV_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", ".env"))
 load_dotenv(dotenv_path=DOTENV_PATH)
 
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -29,6 +29,7 @@ PORT = int(os.getenv("PORT", "8000"))
 ORIGEN_PERMITIDO = os.getenv("ORIGEN_PERMITIDO", "http://127.0.0.1:5500")
 NINJAS_API_URL = os.getenv("NINJAS_API_URL", "https://api.api-ninjas.com/v1/animals")
 UNSPLASH_API_URL = os.getenv("UNSPLASH_API_URL", "https://api.unsplash.com/search/photos")
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", "")
 
 app = FastAPI()
 
@@ -36,9 +37,14 @@ if os.path.isdir(FRONTEND_DIR):
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
 
 # Permite que tu Frontend (futuro) consuma la API sin bloqueos CORS.
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in ORIGEN_PERMITIDO.split(",")
+    if origin is not None and origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[ORIGEN_PERMITIDO],
+    allow_origins=ALLOWED_ORIGINS or ["http://127.0.0.1:5500"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -229,10 +235,11 @@ def migrate_user_cleanup_triggers() -> None:
 def load_env_on_startup() -> None:
     # Lee el archivo .env en la raíz del proyecto (si existe).
     load_dotenv(dotenv_path=DOTENV_PATH)
-    global NINJAS_API_KEY, UNSPLASH_ACCESS_KEY
+    global NINJAS_API_KEY, UNSPLASH_ACCESS_KEY, API_SECRET_KEY
     # Acepta NINJA_API_KEY (requerimiento práctica) y fallback legado NINJAS_API_KEY.
     NINJAS_API_KEY = os.getenv("NINJA_API_KEY", "") or os.getenv("NINJAS_API_KEY", "")
     UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY", "")
+    API_SECRET_KEY = os.getenv("API_SECRET_KEY", "")
     init_db()
     migrate_sightings_json_columns()
     migrate_user_profiles_columns()
@@ -1843,9 +1850,23 @@ def _require_admin_user(x_user_id: Optional[str]) -> UserProfile:
         session.close()
 
 
+def _require_api_key(x_api_key: Optional[str]) -> None:
+    expected = str(API_SECRET_KEY or "").strip()
+    provided = str(x_api_key or "").strip()
+    if not expected:
+        raise HTTPException(status_code=500, detail="API_SECRET_KEY no configurada en servidor.")
+    if not provided or provided != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized: X-API-KEY inválida.")
+
+
 @app.post("/favorites")
-def save_sighting(payload: SightingCreate, x_user_id: Optional[str] = Header(default=None)):
+def save_sighting(
+    payload: SightingCreate,
+    x_user_id: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None),
+):
     """Registra un avistamiento en SQLite (ruta /favorites por compatibilidad con el frontend)."""
+    _require_api_key(x_api_key)
     uid = str(x_user_id or "guest").strip().lower() or "guest"
     session = SessionLocal()
     try:
@@ -1907,8 +1928,13 @@ def list_sightings(x_user_id: Optional[str] = Header(default=None)):
 
 
 @app.delete("/favorites/{id}")
-def delete_sighting(id: int, x_user_id: Optional[str] = Header(default=None)):
+def delete_sighting(
+    id: int,
+    x_user_id: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None),
+):
     """Elimina un avistamiento por id."""
+    _require_api_key(x_api_key)
     uid = str(x_user_id or "guest").strip().lower() or "guest"
     session = SessionLocal()
     try:
@@ -1957,9 +1983,12 @@ def admin_list_users(x_user_id: Optional[str] = Header(default=None)):
 
 @app.post("/admin/users")
 def admin_create_user(
-    payload: AdminUserCreatePayload, x_user_id: Optional[str] = Header(default=None)
+    payload: AdminUserCreatePayload,
+    x_user_id: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None),
 ):
     """Crea usuario desde panel admin."""
+    _require_api_key(x_api_key)
     _require_admin_user(x_user_id)
     session = SessionLocal()
     try:
@@ -1992,9 +2021,13 @@ def admin_create_user(
 
 @app.put("/admin/users/{username}")
 def admin_update_user(
-    username: str, payload: AdminUserUpdatePayload, x_user_id: Optional[str] = Header(default=None)
+    username: str,
+    payload: AdminUserUpdatePayload,
+    x_user_id: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None),
 ):
     """Actualiza usuario desde panel admin (solo admin)."""
+    _require_api_key(x_api_key)
     current_admin = _require_admin_user(x_user_id)
     target = str(username or "").strip().lower()
     if not target:
@@ -2027,8 +2060,13 @@ def admin_update_user(
 
 
 @app.delete("/admin/users/{username}")
-def admin_delete_user(username: str, x_user_id: Optional[str] = Header(default=None)):
+def admin_delete_user(
+    username: str,
+    x_user_id: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None),
+):
     """Elimina usuario desde panel admin (solo admin)."""
+    _require_api_key(x_api_key)
     current_admin = _require_admin_user(x_user_id)
     target = str(username or "").strip().lower()
     if not target:
@@ -2072,8 +2110,9 @@ def admin_delete_user(username: str, x_user_id: Optional[str] = Header(default=N
 
 
 @app.post("/badges")
-def save_badge(payload: BadgeCreate):
+def save_badge(payload: BadgeCreate, x_api_key: Optional[str] = Header(default=None)):
     """Guarda una insignia asociada al usuario si aún no existe."""
+    _require_api_key(x_api_key)
     session = SessionLocal()
     try:
         existing = (
@@ -2215,8 +2254,9 @@ def badges_overview():
 
 
 @app.post("/auth/register")
-def auth_register(payload: RegisterPayload):
+def auth_register(payload: RegisterPayload, x_api_key: Optional[str] = Header(default=None)):
     """Registro de usuario con rol y contraseña."""
+    _require_api_key(x_api_key)
     session = SessionLocal()
     try:
         existing = (
@@ -2256,8 +2296,9 @@ def auth_register(payload: RegisterPayload):
 
 
 @app.post("/auth/login")
-def auth_login(payload: LoginPayload):
+def auth_login(payload: LoginPayload, x_api_key: Optional[str] = Header(default=None)):
     """Login por usuario y contraseña."""
+    _require_api_key(x_api_key)
     session = SessionLocal()
     try:
         existing = (
@@ -2294,8 +2335,9 @@ def auth_login(payload: LoginPayload):
 
 
 @app.post("/auth/logout")
-def auth_logout():
+def auth_logout(x_api_key: Optional[str] = Header(default=None)):
     """Logout local (stateless)."""
+    _require_api_key(x_api_key)
     return {"status": "ok"}
 
 

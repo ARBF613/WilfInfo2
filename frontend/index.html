@@ -8,7 +8,7 @@
       name="description"
       content="Tu enciclopedia viva: busca por nombre o hábitat y guarda cada especie en tu bitácora. WildInfo — enciclopedia de fauna."
     />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     <script>
       tailwind.config = {
         darkMode: "class",
@@ -571,7 +571,15 @@
     </div>
 
     <script>
-      const API_BASE = window.location.port === "8000" ? window.location.origin : "http://localhost:8000";
+      const API_BASE = (() => {
+        if (window.location.port === "8000") return window.location.origin;
+        const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+        const host = window.location.hostname || "127.0.0.1";
+        return `${protocol}//${host}:8000`;
+      })();
+      const API_SECRET_KEY =
+        window.localStorage.getItem("wildinfo_api_key") || "REEMPLAZA_CON_TU_API_SECRET_KEY";
+      const withApiKey = (headers = {}) => ({ ...headers, "X-API-KEY": API_SECRET_KEY });
       const elSearchName = document.getElementById("searchName");
       const loginUsername = document.getElementById("loginUsername");
       const loginPassword = document.getElementById("loginPassword");
@@ -1551,7 +1559,7 @@
         try {
           const resp = await fetch(`${API_BASE}/admin/users`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+            headers: withApiKey({ "Content-Type": "application/json", "X-User-Id": currentUserId }),
             body: JSON.stringify(payload),
           });
           const data = await resp.json().catch(() => ({}));
@@ -1578,7 +1586,7 @@
         try {
           const resp = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(item.username)}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+            headers: withApiKey({ "Content-Type": "application/json", "X-User-Id": currentUserId }),
             body: JSON.stringify(payload),
           });
           const data = await resp.json().catch(() => ({}));
@@ -1597,7 +1605,7 @@
         try {
           const resp = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(username)}`, {
             method: "DELETE",
-            headers: { "X-User-Id": currentUserId },
+            headers: withApiKey({ "X-User-Id": currentUserId }),
           });
           const data = await resp.json().catch(() => ({}));
           if (!resp.ok) throw new Error(data?.detail || `HTTP ${resp.status}`);
@@ -1623,7 +1631,7 @@
         try {
           const resp = await fetch(`${API_BASE}/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: withApiKey({ "Content-Type": "application/json" }),
             body: JSON.stringify({ username: candidate, password: pass }),
           });
           const payload = await resp.json().catch(() => ({}));
@@ -1664,7 +1672,7 @@
         try {
           const resp = await fetch(`${API_BASE}/auth/register`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: withApiKey({ "Content-Type": "application/json" }),
             body: JSON.stringify({ username: candidate, password: pass }),
           });
           const payload = await resp.json().catch(() => ({}));
@@ -1682,7 +1690,7 @@
 
       async function logoutUser() {
         try {
-          await fetch(`${API_BASE}/auth/logout`, { method: "POST" });
+          await fetch(`${API_BASE}/auth/logout`, { method: "POST", headers: withApiKey() });
         } catch (e) {}
         currentUserId = "guest";
         currentUserRole = "user";
@@ -1794,7 +1802,7 @@
         try {
           const resp = await fetch(`${API_BASE}/badges`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: withApiKey({ "Content-Type": "application/json" }),
             body: JSON.stringify({
               user_id: currentUserId,
               badge_code: target.badge_code,
@@ -2115,7 +2123,10 @@
         try {
           const resp = await fetch(`${API_BASE}/favorites`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-User-Id": getCurrentUserIdForApi() },
+            headers: withApiKey({
+              "Content-Type": "application/json",
+              "X-User-Id": getCurrentUserIdForApi(),
+            }),
             body: JSON.stringify(currentAnimalClean),
           });
 
@@ -2149,7 +2160,7 @@
         try {
           const resp = await fetch(`${API_BASE}/favorites/${id}`, {
             method: "DELETE",
-            headers: { "X-User-Id": getCurrentUserIdForApi() },
+            headers: withApiKey({ "X-User-Id": getCurrentUserIdForApi() }),
           });
 
           if (!resp.ok) {
