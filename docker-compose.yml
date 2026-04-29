@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: wildinfo-backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/wildinfo2.db:/app/backend/wildinfo2.db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: wildinfo-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"

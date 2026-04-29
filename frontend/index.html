@@ -8,7 +8,9 @@
       name="description"
       content="Tu enciclopedia viva: busca por nombre o hábitat y guarda cada especie en tu bitácora. WildInfo — enciclopedia de fauna."
     />
-    <!-- Si abres index.html con Live Server (p. ej. :5500), indica aquí el puerto del API (Docker suele ser 8080). Si cargas la app desde el mismo FastAPI/Docker, este valor se ignora y se usa siempre el mismo origen de la página. -->
+    <!-- Base de API para Docker local (frontend en :8080 y backend en :8000). -->
+    <meta name="wildinfo-api-base" content="http://localhost:8000" />
+    <!-- Si abres index.html con Live Server (p. ej. :5500), indica aquí el puerto del API. -->
     <meta name="wildinfo-backend-port" content="8080" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     <script>
