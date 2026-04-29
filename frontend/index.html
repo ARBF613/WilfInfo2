@@ -8,6 +8,8 @@
       name="description"
       content="Tu enciclopedia viva: busca por nombre o hábitat y guarda cada especie en tu bitácora. WildInfo — enciclopedia de fauna."
     />
+    <!-- Si abres index.html con Live Server (p. ej. :5500), indica aquí el puerto del API (Docker suele ser 8080). Si cargas la app desde el mismo FastAPI/Docker, este valor se ignora y se usa siempre el mismo origen de la página. -->
+    <meta name="wildinfo-backend-port" content="8080" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     <script>
       tailwind.config = {
@@ -572,10 +574,56 @@
 
     <script>
       const API_BASE = (() => {
-        if (window.location.port === "8000") return window.location.origin;
         const protocol = window.location.protocol === "https:" ? "https:" : "http:";
         const host = window.location.hostname || "127.0.0.1";
-        return `${protocol}//${host}:8000`;
+        const port = window.location.port;
+
+        const staticDevPorts = new Set([
+          "5500",
+          "5501",
+          "5173",
+          "3000",
+          "4173",
+          "1234",
+          "8081",
+          "8888",
+        ]);
+
+        const metaBase = document.querySelector('meta[name="wildinfo-api-base"]');
+        const metaBaseUrl = metaBase && metaBase.getAttribute("content")?.trim()
+          ? metaBase.getAttribute("content").trim().replace(/\/$/, "")
+          : "";
+
+        if (!port || !staticDevPorts.has(port)) {
+          if (metaBaseUrl) return metaBaseUrl;
+          return window.location.origin;
+        }
+
+        if (metaBaseUrl) return metaBaseUrl;
+        try {
+          const ls = window.localStorage.getItem("wildinfo_api_base");
+          if (ls && ls.trim()) return ls.trim().replace(/\/$/, "");
+        } catch (e) {}
+
+        let backendPort = "8080";
+        try {
+          const m = document.querySelector('meta[name="wildinfo-backend-port"]');
+          if (m && m.getAttribute("content")?.trim()) backendPort = m.getAttribute("content").trim();
+          else if (window.localStorage.getItem("wildinfo_api_port")?.trim()) {
+            backendPort = window.localStorage.getItem("wildinfo_api_port").trim();
+          }
+        } catch (e) {}
+        return `${protocol}//${host}:${backendPort}`;
+      })();
+
+      const API_DISPLAY_PORT = (() => {
+        try {
+          const u = new URL(API_BASE);
+          if (u.port) return u.port;
+          return u.protocol === "https:" ? "443" : "80";
+        } catch (e) {
+          return window.location.port || "";
+        }
       })();
       const API_SECRET_KEY =
         window.localStorage.getItem("wildinfo_api_key") || "REEMPLAZA_CON_TU_API_SECRET_KEY";
@@ -2097,7 +2145,9 @@
           if (err && err.status && err.status >= 500) {
             showStatus("Estamos teniendo problemas técnicos, intenta más tarde.");
           } else {
-            showStatus("Ocurrió un error al buscar. Verifica que tu backend esté funcionando en el puerto 8000.");
+            showStatus(
+              `Ocurrió un error al buscar. Verifica que tu backend esté en marcha (API: ${API_BASE}, puerto ${API_DISPLAY_PORT}).`
+            );
           }
           console.error(err);
         } finally {
