@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WildInfo</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23059669'/%3E%3Cpath fill='%23ecfdf5' d='M8 20c4-6 8-10 16-12-4 6-9 11-16 14z'/%3E%3C/svg%3E"
+    />
     <meta
       name="description"
       content="Tu enciclopedia viva: busca por nombre o hábitat y guarda cada especie en tu bitácora. WildInfo — enciclopedia de fauna."
@@ -12,25 +17,8 @@
     <meta name="wildinfo-api-base" content="http://localhost:8000" />
     <!-- Si abres index.html con Live Server (p. ej. :5500), indica aquí el puerto del API. -->
     <meta name="wildinfo-backend-port" content="8080" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            animation: {
-              "pulse-red": "pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-            },
-            keyframes: {
-              "pulse-red": {
-                "0%, 100%": { opacity: "1" },
-                "50%": { opacity: "0.85" },
-              },
-            },
-          },
-        },
-      };
-    </script>
+    <!-- CSS de Tailwind (local). Regenerar: frontend/ → npm run build:css -->
+    <link rel="stylesheet" href="./tailwind.css" />
     <script>
       // Aplicar preferencia de modo antes de que el contenido se vuelva a pintar.
       (function () {
