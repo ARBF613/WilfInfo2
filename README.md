@@ -95,8 +95,9 @@ Un **solo servicio** con `backend/Dockerfile`: sirve la SPA en `/` y la API en l
 ### 4. Volumen para la base de datos (persistencia)
 
 1. En el servicio → **Volumes** → **Add Volume**.
-2. Montaje: **`/app/backend`** (ahí vive `wildinfo2.db`).
-3. Redeploy del servicio.
+2. Montaje: **`/app/data`** (solo la base de datos; **no** uses `/app/backend` o borrarás el código Python del contenedor).
+3. Variable opcional en Railway: `WILDINFO_DATA_DIR=/app/data`
+4. Redeploy del servicio.
 
 Sin volumen, los favoritos se pierden al redeploy.
 

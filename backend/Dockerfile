@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir --default-timeout=120 -r /app/requirements.txt
 
 COPY backend /app/backend
 COPY frontend /app/frontend
+RUN mkdir -p /app/data
 
 EXPOSE 8000
 

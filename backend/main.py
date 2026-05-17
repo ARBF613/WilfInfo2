@@ -55,7 +55,11 @@ NINJAS_API_KEY: str = ""
 UNSPLASH_ACCESS_KEY: str = ""
 
 # --- Persistencia SQLite (SQLAlchemy) ---
-DATABASE_PATH = os.path.join(BASE_DIR, "wildinfo2.db")
+# En Railway el volumen debe montarse en /app/data (no en /app/backend: ocultaría el código).
+DATABASE_PATH = os.getenv(
+    "DATABASE_PATH",
+    os.path.join(os.getenv("WILDINFO_DATA_DIR", BASE_DIR), "wildinfo2.db"),
+)
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 # `check_same_thread=False` ayuda con SQLite cuando Uvicorn usa threads.
