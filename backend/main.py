@@ -256,6 +256,15 @@ def root():
     return FileResponse(FRONTEND_INDEX_PATH, media_type="text/html")
 
 
+@app.get("/tailwind.css")
+def tailwind_css():
+    """CSS compilado (mismo origen que la SPA en Railway / uvicorn)."""
+    path = os.path.join(FRONTEND_DIR, "tailwind.css")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="No se encontró frontend/tailwind.css")
+    return FileResponse(path, media_type="text/css")
+
+
 @app.get("/status")
 def status():
     """Endpoint simple de healthcheck para el frontend."""

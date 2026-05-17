@@ -13,10 +13,9 @@
       name="description"
       content="Tu enciclopedia viva: busca por nombre o hábitat y guarda cada especie en tu bitácora. WildInfo — enciclopedia de fauna."
     />
-    <!-- Base de API para Docker local (frontend en :8080 y backend en :8000). -->
-    <meta name="wildinfo-api-base" content="http://localhost:8000" />
-    <!-- Si abres index.html con Live Server (p. ej. :5500), indica aquí el puerto del API. -->
-    <meta name="wildinfo-backend-port" content="8080" />
+    <!-- Solo desarrollo: URL explícita del API (Live Server). En Docker/producción déjalo vacío. -->
+    <meta name="wildinfo-api-base" content="" />
+    <meta name="wildinfo-backend-port" content="8000" />
     <!-- CSS de Tailwind (local). Regenerar: frontend/ → npm run build:css -->
     <link rel="stylesheet" href="./tailwind.css" />
     <script>
@@ -567,6 +566,7 @@
         const protocol = window.location.protocol === "https:" ? "https:" : "http:";
         const host = window.location.hostname || "127.0.0.1";
         const port = window.location.port;
+        const origin = window.location.origin.replace(/\/$/, "");
 
         const staticDevPorts = new Set([
           "5500",
@@ -584,26 +584,34 @@
           ? metaBase.getAttribute("content").trim().replace(/\/$/, "")
           : "";
 
-        if (!port || !staticDevPorts.has(port)) {
-          if (metaBaseUrl) return metaBaseUrl;
-          return window.location.origin;
-        }
-
         if (metaBaseUrl) return metaBaseUrl;
+
         try {
           const ls = window.localStorage.getItem("wildinfo_api_base");
           if (ls && ls.trim()) return ls.trim().replace(/\/$/, "");
         } catch (e) {}
 
-        let backendPort = "8080";
-        try {
-          const m = document.querySelector('meta[name="wildinfo-backend-port"]');
-          if (m && m.getAttribute("content")?.trim()) backendPort = m.getAttribute("content").trim();
-          else if (window.localStorage.getItem("wildinfo_api_port")?.trim()) {
-            backendPort = window.localStorage.getItem("wildinfo_api_port").trim();
-          }
-        } catch (e) {}
-        return `${protocol}//${host}:${backendPort}`;
+        // Backend sirve SPA + API en el mismo puerto (uvicorn :8000).
+        if (port === "8000") return origin;
+
+        // Live Server / Vite: API en otro puerto (p. ej. 8000).
+        if (port && staticDevPorts.has(port)) {
+          let backendPort = "8000";
+          try {
+            const m = document.querySelector('meta[name="wildinfo-backend-port"]');
+            if (m && m.getAttribute("content")?.trim()) backendPort = m.getAttribute("content").trim();
+            else if (window.localStorage.getItem("wildinfo_api_port")?.trim()) {
+              backendPort = window.localStorage.getItem("wildinfo_api_port").trim();
+            }
+          } catch (e) {}
+          return `${protocol}//${host}:${backendPort}`;
+        }
+
+        // Docker: nginx en :8080 con proxy /api.
+        if (port === "8080") return `${origin}/api`;
+
+        // Railway / HTTPS / uvicorn en un solo servicio → API en el mismo origen.
+        return origin;
       })();
 
       const API_DISPLAY_PORT = (() => {
@@ -615,8 +623,8 @@
           return window.location.port || "";
         }
       })();
-      const API_SECRET_KEY =
-        window.localStorage.getItem("wildinfo_api_key") || "REEMPLAZA_CON_TU_API_SECRET_KEY";
+      // La clave real solo vive en el servidor (.env). El cliente la guarda en localStorage tras configurarla una vez.
+      const API_SECRET_KEY = window.localStorage.getItem("wildinfo_api_key") || "";
       const withApiKey = (headers = {}) => ({ ...headers, "X-API-KEY": API_SECRET_KEY });
       const elSearchName = document.getElementById("searchName");
       const loginUsername = document.getElementById("loginUsername");

@@ -9,6 +9,7 @@ RUN npm run build:css
 
 FROM nginx:alpine
 
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY frontend/index.html /usr/share/nginx/html/index.html
 COPY --from=css /build/frontend/tailwind.css /usr/share/nginx/html/tailwind.css
 
