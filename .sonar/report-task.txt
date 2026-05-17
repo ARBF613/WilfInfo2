@@ -2,5 +2,5 @@ projectKey=wilfinfo2
 serverUrl=http://localhost:9000
 serverVersion=26.5.0.122743
 dashboardUrl=http://localhost:9000/dashboard?id=wilfinfo2
-ceTaskId=93b9e584-d26f-45ff-a1b1-484705d86b80
-ceTaskUrl=http://localhost:9000/api/ce/task?id=93b9e584-d26f-45ff-a1b1-484705d86b80
+ceTaskId=90700910-f284-4f5c-aedf-46344e6373d6
+ceTaskUrl=http://localhost:9000/api/ce/task?id=90700910-f284-4f5c-aedf-46344e6373d6

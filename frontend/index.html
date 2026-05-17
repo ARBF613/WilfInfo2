@@ -22,11 +22,14 @@
       // Aplicar preferencia de modo antes de que el contenido se vuelva a pintar.
       (function () {
         const applyTheme = function () {
+          let theme = null;
           try {
-            const theme = localStorage.getItem("theme");
-            if (theme === "dark") document.documentElement.classList.add("dark");
-            else document.documentElement.classList.remove("dark");
-          } catch (e) {}
+            theme = localStorage.getItem("theme");
+          } catch (err) {
+            console.warn("WildInfo: localStorage no disponible al leer theme", err);
+          }
+          if (theme === "dark") document.documentElement.classList.add("dark");
+          else document.documentElement.classList.remove("dark");
         };
 
         if (document.readyState === "loading") {
@@ -590,74 +593,94 @@
     </div>
 
     <script>
-      const API_BASE = (() => {
-        const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-        const host = window.location.hostname || "127.0.0.1";
-        const port = window.location.port;
-        const origin = window.location.origin.replace(/\/$/, "");
+      const STATIC_DEV_PORTS = new Set([
+        "5500",
+        "5501",
+        "5173",
+        "3000",
+        "4173",
+        "1234",
+        "8081",
+        "8888",
+      ]);
 
-        const staticDevPorts = new Set([
-          "5500",
-          "5501",
-          "5173",
-          "3000",
-          "4173",
-          "1234",
-          "8081",
-          "8888",
-        ]);
-
-        const metaBase = document.querySelector('meta[name="wildinfo-api-base"]');
-        const metaBaseUrl = metaBase && metaBase.getAttribute("content")?.trim()
-          ? metaBase.getAttribute("content").trim().replace(/\/$/, "")
-          : "";
-
-        if (metaBaseUrl) return metaBaseUrl;
-
+      function safeLocalStorageGetItem(key) {
         try {
-          const ls = window.localStorage.getItem("wildinfo_api_base");
-          if (ls && ls.trim()) return ls.trim().replace(/\/$/, "");
-        } catch (e) {}
-
-        // Backend sirve SPA + API en el mismo puerto (uvicorn :8000).
-        if (port === "8000") return origin;
-
-        // Live Server / Vite: API en otro puerto (p. ej. 8000).
-        if (port && staticDevPorts.has(port)) {
-          let backendPort = "8000";
-          try {
-            const m = document.querySelector('meta[name="wildinfo-backend-port"]');
-            if (m && m.getAttribute("content")?.trim()) backendPort = m.getAttribute("content").trim();
-            else if (window.localStorage.getItem("wildinfo_api_port")?.trim()) {
-              backendPort = window.localStorage.getItem("wildinfo_api_port").trim();
-            }
-          } catch (e) {}
-          return `${protocol}//${host}:${backendPort}`;
+          return globalThis.localStorage.getItem(key);
+        } catch (err) {
+          console.warn("WildInfo: localStorage no disponible al leer", key, err);
+          return null;
         }
+      }
 
-        // Docker: nginx en :8080 con proxy /api.
+      function safeLocalStorageSetItem(key, value) {
+        try {
+          globalThis.localStorage.setItem(key, value);
+          return true;
+        } catch (err) {
+          console.warn("WildInfo: localStorage no disponible al guardar", key, err);
+          return false;
+        }
+      }
+
+      function trimApiBaseUrl(url) {
+        return String(url || "").trim().replace(/\/$/, "");
+      }
+
+      function readMetaApiBase() {
+        const meta = document.querySelector('meta[name="wildinfo-api-base"]');
+        const raw = meta?.getAttribute("content");
+        return raw?.trim() ? trimApiBaseUrl(raw) : "";
+      }
+
+      function readStoredApiBase() {
+        const ls = safeLocalStorageGetItem("wildinfo_api_base");
+        return ls?.trim() ? trimApiBaseUrl(ls) : "";
+      }
+
+      function readDevBackendPort() {
+        const meta = document.querySelector('meta[name="wildinfo-backend-port"]');
+        const fromMeta = meta?.getAttribute("content")?.trim();
+        if (fromMeta) return fromMeta;
+        const fromLs = safeLocalStorageGetItem("wildinfo_api_port")?.trim();
+        if (fromLs) return fromLs;
+        return "8000";
+      }
+
+      function buildDevApiBase(protocol, host) {
+        return `${protocol}//${host}:${readDevBackendPort()}`;
+      }
+
+      function resolveApiBase() {
+        const loc = globalThis.location;
+        const protocol = loc.protocol === "https:" ? "https:" : "http:";
+        const host = loc.hostname || "127.0.0.1";
+        const port = loc.port;
+        const origin = trimApiBaseUrl(loc.origin);
+
+        const override = readMetaApiBase() || readStoredApiBase();
+        if (override) return override;
+        if (port === "8000") return origin;
+        if (port && STATIC_DEV_PORTS.has(port)) return buildDevApiBase(protocol, host);
         if (port === "8080") return `${origin}/api`;
-
-        // Railway / HTTPS / uvicorn en un solo servicio → API en el mismo origen.
         return origin;
-      })();
+      }
+
+      const API_BASE = resolveApiBase();
 
       const API_DISPLAY_PORT = (() => {
         try {
           const u = new URL(API_BASE);
           if (u.port) return u.port;
           return u.protocol === "https:" ? "443" : "80";
-        } catch (e) {
-          return window.location.port || "";
+        } catch (err) {
+          console.warn("WildInfo: no se pudo interpretar API_BASE", API_BASE, err);
+          return globalThis.location.port || "";
         }
       })();
       // La clave real solo vive en el servidor (.env). El cliente la guarda en localStorage tras configurarla una vez.
       function getApiSecretKey() {
-        try {
-          return window.localStorage.getItem("wildinfo_api_key") || "";
-        } catch (e) {
-          return "";
-        }
+        return safeLocalStorageGetItem("wildinfo_api_key") || "";
       }
       const withApiKey = (headers = {}) => ({ ...headers, "X-API-KEY": getApiSecretKey() });
       const elSearchName = document.getElementById("searchName");
@@ -2520,13 +2543,12 @@
             if (apiKeyStatus) apiKeyStatus.textContent = "Escribe la clave antes de guardar.";
             return;
           }
-          try {
-            localStorage.setItem("wildinfo_api_key", v);
+          if (safeLocalStorageSetItem("wildinfo_api_key", v)) {
             if (apiKeyDevice) apiKeyDevice.value = "";
             showToast("Clave API guardada en este dispositivo");
             refreshApiKeyStatus();
-          } catch (e) {
-            if (apiKeyStatus) apiKeyStatus.textContent = "No se pudo guardar (revisa modo privado del navegador).";
+          } else if (apiKeyStatus) {
+            apiKeyStatus.textContent = "No se pudo guardar (revisa modo privado del navegador).";
           }
         });
       }

@@ -50,6 +50,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Metadatos OpenAPI para HTTPException (regla SonarQube python:S8415).
+_OPENAPI_400 = {400: {"description": "Solicitud inválida"}}
+_OPENAPI_401 = {401: {"description": "No autorizado"}}
+_OPENAPI_403 = {403: {"description": "Acceso denegado"}}
+_OPENAPI_404 = {404: {"description": "Recurso no encontrado"}}
+_OPENAPI_409 = {409: {"description": "Conflicto"}}
+_OPENAPI_500 = {500: {"description": "Error interno del servidor"}}
+
+
+def _openapi_responses(*parts: Dict[int, Dict[str, str]]) -> Dict[int, Dict[str, str]]:
+    merged: Dict[int, Dict[str, str]] = {}
+    for part in parts:
+        merged.update(part)
+    return merged
+
+
+OPENAPI_NOT_FOUND = _openapi_responses(_OPENAPI_404)
+OPENAPI_API_KEY = _openapi_responses(_OPENAPI_401, _OPENAPI_500)
+OPENAPI_ADMIN = _openapi_responses(_OPENAPI_401, _OPENAPI_403)
+OPENAPI_FAVORITES_DELETE = _openapi_responses(_OPENAPI_404, _OPENAPI_401, _OPENAPI_500)
+OPENAPI_ADMIN_CREATE_USER = _openapi_responses(
+    _OPENAPI_401, _OPENAPI_403, _OPENAPI_409, _OPENAPI_500
+)
+OPENAPI_ADMIN_MUTATE_USER = _openapi_responses(
+    _OPENAPI_400, _OPENAPI_401, _OPENAPI_403, _OPENAPI_404, _OPENAPI_500
+)
+OPENAPI_AUTH_REGISTER = _openapi_responses(_OPENAPI_401, _OPENAPI_409, _OPENAPI_500)
+OPENAPI_AUTH_LOGIN = _openapi_responses(_OPENAPI_401, _OPENAPI_404, _OPENAPI_500)
+OPENAPI_BADGES_USER = _openapi_responses(_OPENAPI_400)
+OPENAPI_QUIZ = _openapi_responses(_OPENAPI_400, _OPENAPI_500)
+
 # Cargadas en el evento de inicio del servidor.
 NINJAS_API_KEY: str = ""
 UNSPLASH_ACCESS_KEY: str = ""
@@ -252,7 +283,7 @@ def load_env_on_startup() -> None:
     _cleanup_orphan_user_data()
 
 
-@app.get("/")
+@app.get("/", responses=OPENAPI_NOT_FOUND)
 def root():
     """Entrega la SPA `index.html` en la ruta principal."""
     if not os.path.isfile(FRONTEND_INDEX_PATH):
@@ -260,7 +291,7 @@ def root():
     return FileResponse(FRONTEND_INDEX_PATH, media_type="text/html")
 
 
-@app.get("/tailwind.css")
+@app.get("/tailwind.css", responses=OPENAPI_NOT_FOUND)
 def tailwind_css():
     """CSS compilado (mismo origen que la SPA en Railway / uvicorn)."""
     path = os.path.join(FRONTEND_DIR, "tailwind.css")
@@ -1872,7 +1903,7 @@ def _require_api_key(x_api_key: Optional[str]) -> None:
         raise HTTPException(status_code=401, detail="Unauthorized: X-API-KEY inválida.")
 
 
-@app.post("/favorites")
+@app.post("/favorites", responses=OPENAPI_API_KEY)
 def save_sighting(
     payload: SightingCreate,
     x_user_id: Optional[str] = Header(default=None),
@@ -1940,7 +1971,7 @@ def list_sightings(x_user_id: Optional[str] = Header(default=None)):
         session.close()
 
 
-@app.delete("/favorites/{id}")
+@app.delete("/favorites/{id}", responses=OPENAPI_FAVORITES_DELETE)
 def delete_sighting(
     id: int,
     x_user_id: Optional[str] = Header(default=None),
@@ -1971,7 +2002,7 @@ def delete_sighting(
         session.close()
 
 
-@app.get("/admin/users")
+@app.get("/admin/users", responses=OPENAPI_ADMIN)
 def admin_list_users(x_user_id: Optional[str] = Header(default=None)):
     """Listado administrativo de usuarios (solo admin)."""
     _require_admin_user(x_user_id)
@@ -1994,7 +2025,7 @@ def admin_list_users(x_user_id: Optional[str] = Header(default=None)):
         session.close()
 
 
-@app.post("/admin/users")
+@app.post("/admin/users", responses=OPENAPI_ADMIN_CREATE_USER)
 def admin_create_user(
     payload: AdminUserCreatePayload,
     x_user_id: Optional[str] = Header(default=None),
@@ -2032,7 +2063,7 @@ def admin_create_user(
         session.close()
 
 
-@app.put("/admin/users/{username}")
+@app.put("/admin/users/{username}", responses=OPENAPI_ADMIN_MUTATE_USER)
 def admin_update_user(
     username: str,
     payload: AdminUserUpdatePayload,
@@ -2072,7 +2103,7 @@ def admin_update_user(
         session.close()
 
 
-@app.delete("/admin/users/{username}")
+@app.delete("/admin/users/{username}", responses=OPENAPI_ADMIN_MUTATE_USER)
 def admin_delete_user(
     username: str,
     x_user_id: Optional[str] = Header(default=None),
@@ -2122,7 +2153,7 @@ def admin_delete_user(
         session.close()
 
 
-@app.post("/badges")
+@app.post("/badges", responses=OPENAPI_API_KEY)
 def save_badge(payload: BadgeCreate, x_api_key: Optional[str] = Header(default=None)):
     """Guarda una insignia asociada al usuario si aún no existe."""
     _require_api_key(x_api_key)
@@ -2174,7 +2205,7 @@ def save_badge(payload: BadgeCreate, x_api_key: Optional[str] = Header(default=N
         session.close()
 
 
-@app.get("/badges/user/{user_id}")
+@app.get("/badges/user/{user_id}", responses=OPENAPI_BADGES_USER)
 def list_badges_by_user(user_id: str):
     """Lista insignias desbloqueadas por un usuario."""
     uid = user_id.strip()
@@ -2266,7 +2297,7 @@ def badges_overview():
         session.close()
 
 
-@app.post("/auth/register")
+@app.post("/auth/register", responses=OPENAPI_AUTH_REGISTER)
 def auth_register(payload: RegisterPayload, x_api_key: Optional[str] = Header(default=None)):
     """Registro de usuario con rol y contraseña."""
     _require_api_key(x_api_key)
@@ -2308,7 +2339,7 @@ def auth_register(payload: RegisterPayload, x_api_key: Optional[str] = Header(de
         session.close()
 
 
-@app.post("/auth/login")
+@app.post("/auth/login", responses=OPENAPI_AUTH_LOGIN)
 def auth_login(payload: LoginPayload, x_api_key: Optional[str] = Header(default=None)):
     """Login por usuario y contraseña."""
     _require_api_key(x_api_key)
@@ -2347,7 +2378,7 @@ def auth_login(payload: LoginPayload, x_api_key: Optional[str] = Header(default=
         session.close()
 
 
-@app.post("/auth/logout")
+@app.post("/auth/logout", responses=OPENAPI_API_KEY)
 def auth_logout(x_api_key: Optional[str] = Header(default=None)):
     """Logout local (stateless)."""
     _require_api_key(x_api_key)
@@ -2538,7 +2569,7 @@ _QUIZ_BUILDERS = [
 ]
 
 
-@app.get("/quiz")
+@app.get("/quiz", responses=OPENAPI_QUIZ)
 def get_quiz():
     """
     Trivia a partir de los datos guardados (taxonomía y características alineados
