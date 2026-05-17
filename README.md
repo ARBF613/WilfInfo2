@@ -2,13 +2,15 @@
 
 SPA con **FastAPI** + **SQLite** + frontend estático (**nginx** / Tailwind compilado). Consulta **API Ninjas** y **Unsplash**; guarda favoritos y usuarios en base de datos persistente.
 
+**URL en producción (Railway):** https://wilfinfo2-production.up.railway.app
+
 ## Tecnologías
 
 | Capa | Stack |
 |------|--------|
 | Backend | Python 3.12+, FastAPI, SQLAlchemy, SQLite, httpx |
 | Frontend | HTML, JavaScript, Tailwind CSS (build local) |
-| Despliegue | Docker, Docker Compose, nginx |
+| Despliegue | Docker, Docker Compose, nginx, [Railway](https://wilfinfo2-production.up.railway.app) |
 | Calidad | SonarQube, Lighthouse (manual) |
 
 ## Estructura del proyecto
@@ -87,7 +89,7 @@ Un **solo servicio** con `backend/Dockerfile`: sirve la SPA en `/` y la API en l
 | `NINJA_API_KEY` | tu clave API Ninjas |
 | `UNSPLASH_ACCESS_KEY` | tu clave Unsplash |
 | `API_SECRET_KEY` | una clave larga que inventes (solo servidor + navegador) |
-| `ORIGEN_PERMITIDO` | la URL pública de Railway, ej. `https://wildinfo-production.up.railway.app` |
+| `ORIGEN_PERMITIDO` | `https://wilfinfo2-production.up.railway.app` |
 | `HOST` | `0.0.0.0` |
 
 `PORT` lo asigna Railway automáticamente; no hace falta definirlo.
@@ -160,7 +162,12 @@ En Chrome: DevTools → **Lighthouse** → analizar http://localhost:8080 (o URL
 | Entorno | URL |
 |---------|-----|
 | Local Docker | http://localhost:8080 |
-| Railway | *(completar tras Generate Domain)* https://xxx.up.railway.app |
+| **Producción (Railway)** | **https://wilfinfo2-production.up.railway.app** |
+
+Enlaces útiles en producción:
+
+- Aplicación: https://wilfinfo2-production.up.railway.app/
+- Healthcheck API: https://wilfinfo2-production.up.railway.app/status
 
 ## Presentación sugerida
 
